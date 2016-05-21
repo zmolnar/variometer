@@ -4,7 +4,7 @@
  * @author Zoltán Molnár
  * @date Wed Dec 23 16:10:51 2015 (+0100)
  * Version: 
- * Last-Updated: Sun Jan 17 20:59:08 2016 (+0100)
+ * Last-Updated: Tue May 17 22:19:56 2016 (+0200)
  *           By: Molnár Zoltán
  */
 
@@ -43,6 +43,8 @@ extern mutex_t mtx_dsp;
 float dsp_vario = 0;
 float dsp_pfil = 0;
 
+event_source_t test_source;
+
 /*******************************************************************************/
 /* DECLARATION OF LOCAL FUNCTIONS                                              */
 /*******************************************************************************/
@@ -75,7 +77,7 @@ static float calc_slope (float *buf, size_t blength,
         float x_avg = 0;
         float y_avg = 0;
         size_t i;
-        for ( i = 0; i < dlength; i++) {
+        for (i = 0; i < dlength; i++) {
                 size_t j;
                 if (start + i < blength)
                         j = start + i;
@@ -111,13 +113,16 @@ THD_FUNCTION(SignalProcessorThread, arg)
 {
         (void)arg;
 
-        static float pi_1;
-        static float vi_1;
-        static systime_t ti_1;
+        float pi_1;
+        float vi_1;
+        systime_t ti_1;
         float hbuf[BUFLENGTH] = {0};
         size_t dlength = 0;
         size_t i = 0;
 
+        chEvtObjectInit (&test_source);
+
+        // Wait for initial data.
         thread_t *psender = chMsgWait ();
         msg_t msg = chMsgGet (psender);
         struct PressureData_s data = *(struct PressureData_s *) msg;
@@ -133,34 +138,30 @@ THD_FUNCTION(SignalProcessorThread, arg)
                 data = *(struct PressureData_s *) msg;
                 chMsgRelease (psender, 0);
 
+                systime_t dt = data.t - ti_1;
+                if (data.t < ti_1) 
+                        dt += (systime_t)(-1);
+                               
                 float p_raw = data.p_raw;
-                float dt = (ST2MS(data.t) - ST2MS(ti_1));
-                float p = ab_filter (ALPHA, BETA, &pi_1, &vi_1, p_raw, dt);
+                float p = ab_filter (ALPHA, BETA, &pi_1, &vi_1, p_raw, ST2MS(dt));
                 float h = 44330 * (1 - pow ((p / 101325.0), 0.1902));
-
-                hbuf[i] = h;
-                if (i < (BUFLENGTH - 1))
-                        i++;
-                else
-                        i = 0;
+                hbuf[i++ % BUFLENGTH] = h;
                 
                 if (dlength < BUFLENGTH) {
                         dlength++;
-                        chprintf ((BaseSequentialStream *)&SD1,"continue\n");
                         continue;
                 }               
 
-                float v = calc_slope (hbuf, BUFLENGTH, i, dlength, dt);
+                float v = calc_slope (hbuf, BUFLENGTH, i % BUFLENGTH, dlength, 
+                                      ST2MS(dt) / 1000.0);
 
                 ti_1 = data.t;
 
-//                chMtxLock (&mtx_dsp);
                 dsp_vario = v;
                 dsp_pfil  = p;
-//                chMtxUnlock (&mtx_dsp);
 
-                chprintf ((BaseSequentialStream *)&SD1, "%f %f %d\n\r", 
-                          h, p, data.p_raw);
+                //chprintf ((BaseSequentialStream *)&SD1, "dt=%d p=%f v=%f h=%f\n\r", ST2MS(dt), p, v, h);
+
         }
 }
 

@@ -48,16 +48,18 @@
  * IO pins assignments
  *
  */
+#define GPIOA_GPS_TX             2
+#define GPIOA_GPS_RX             3
 #define GPIOA_MS5611_SPI_NSS     4
 #define GPIOA_MS5611_SPI_SCK     5
 #define GPIOA_MS5611_SPI_MISO    6
 #define GPIOA_MS5611_SPI_MOSI    7
-#define GPIOA_USART1_TX          9
-#define GPIOA_USART1_RX         10
+#define GPIOA_SHUTDOWN           8
+#define GPIOA_KOBO_TX            9
+#define GPIOA_KOBO_RX           10
 
-#define GPIOC_LED               13
-#define GPIOC_OSC32_IN          14
-#define GPIOC_OSC32_OUT         15
+#define GPIOB_BUZZER             6
+#define GPIOB_LED               12
 
 /*
  * I/O ports initial setup, this configuration is established soon after reset
@@ -87,31 +89,35 @@
  * Port A setup.
  * Everything input with pull-up except:
  * 
+ * PA2 - Alternate Push Pull output (USART2-Tx).
+ * PA3 - Digital input (USART2-Rx).
  * PA4 - Push Pull output 50MHz (SPI1-NSS).
  * PA5 - Alternate Push Pull output (SPI1-SCK).
  * PA6 - Alternate Push Pull output (SPI1-MISO).
  * PA7 - Alternate Push Pull output (SPI1-MOSI).
+ * PA8 - Push Pull output 2MHz.
  * PA9 - Alternate Push Pull output (USART1-Tx).
  */
-#define VAL_GPIOACRL            0xBBB38888      /*  PA7...PA0 */
-#define VAL_GPIOACRH            0x888888B8      /* PA15...PA8 */
+#define VAL_GPIOACRL            0xBBB34B88      /*  PA7...PA0 */
+#define VAL_GPIOACRH            0x888888B2      /* PA15...PA8 */
 #define VAL_GPIOAODR            0xFFFFFFFF
 
 /*
  * Port B setup.
  * Everything input with pull-up except:
+ * PB6  - Alternate Push Pull output 10MHz.
+ * PB12 - Push Pull output 2MHz.
  */
-#define VAL_GPIOBCRL            0x88888888      /*  PB7...PB0 */
-#define VAL_GPIOBCRH            0x8888B888      /* PB15...PB8 */
+#define VAL_GPIOBCRL            0x89888888      /*  PB7...PB0 */
+#define VAL_GPIOBCRH            0x88828888      /* PB15...PB8 */
 #define VAL_GPIOBODR            0xFFFFFFFF
 
 /*
  * Port C setup.
  * Everything input with pull-up except:
- * PC13 - Digital output (LED).
  */
 #define VAL_GPIOCCRL            0x88888888      /*  PC7...PC0 */
-#define VAL_GPIOCCRH            0x88388888      /* PC15...PC8 */
+#define VAL_GPIOCCRH            0x88888888      /* PC15...PC8 */
 #define VAL_GPIOCODR            0xFFFFFFFF
 
 /*
