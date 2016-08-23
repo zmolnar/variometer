@@ -5,7 +5,7 @@
  * @author Molnár Zoltán
  * @date Mon May 16 21:08:09 2016 (+0200)
  * Version: 1.0.0
- * Last-Updated: Tue May 17 22:13:04 2016 (+0200)
+ * Last-Updated: Mon Aug 22 19:07:12 2016 (+0200)
  *           By: Molnár Zoltán
  * 
  */
@@ -32,6 +32,7 @@
 /*******************************************************************************/
 /* DEFINITION OF GLOBAL CONSTANTS AND VARIABLES                                */
 /*******************************************************************************/
+EVENTSOURCE_DECL(serial_event_source);
 
 /*******************************************************************************/
 /* DEFINITION OF LOCAL FUNCTIONS                                               */
@@ -44,33 +45,53 @@ THD_FUNCTION(SerialHandlerThread, arg)
 {
         (void)arg;
 
-        event_listener_t gps_data_listener;
+        /* Start serial interface to Kobo.*/
+        static SerialConfig kobocfg = {9600,0,0,0};
+        sdStart (&SD1, &kobocfg);
+
+        /* Start serial interface to GPS module.*/
+        static SerialConfig gpscfg  = {9600,0,0,0};
+        sdStart (&SD2, &gpscfg);
+
+        event_listener_t gps_listener;
         eventflags_t flags;
         chEvtRegisterMaskWithFlags((event_source_t *)chnGetEventSource(&SD2), 
-                                   &gps_data_listener, EVENT_MASK(1),
+                                   &gps_listener, 
+                                   EVENT_MASK(SERIAL_EVENT_GPS_DATA_RECEIVED),
                                    CHN_INPUT_AVAILABLE);
 
-
+        event_listener_t serial_listener;
+        chEvtRegisterMask (&serial_event_source, 
+                           &serial_listener, 
+                           EVENT_MASK(SERIAL_EVENT_LK8EX1_READY));
 
         while (1) {
-                chEvtWaitOne(EVENT_MASK(1));
-                flags = chEvtGetAndClearFlags(&gps_data_listener);
-                
-                if (flags & CHN_INPUT_AVAILABLE)
-                {
-                        msg_t charbuf;
-                        do
+                eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
+                                
+                if (evt & EVENT_MASK(SERIAL_EVENT_GPS_DATA_RECEIVED)) {
+                        flags = chEvtGetAndClearFlags(&gps_listener);
+                        if (flags & CHN_INPUT_AVAILABLE)
                         {
-                                charbuf = chnGetTimeout(&SD2, TIME_IMMEDIATE);
-                                if ( charbuf != STM_TIMEOUT )
+                                msg_t c;
+                                do
                                 {
-                                        chprintf((BaseSequentialStream*)&SD1, "%c", (char)charbuf);
-                                }
+                                        c = chnGetTimeout(&SD2, TIME_IMMEDIATE);
+                                        if ( c != STM_TIMEOUT )
+                                                chprintf((BaseSequentialStream*)&SD1, "%c", (char)c);
+                                } 
+                                while (c != STM_TIMEOUT);
                         } 
-                        while (charbuf != STM_TIMEOUT);
-                } 
+                }
+                if (evt & EVENT_MASK(SERIAL_EVENT_LK8EX1_READY)) {
+                        chprintf((BaseSequentialStream*)&SD1, "\n\rLK8EX1 ready\n\r");
+                }
         }
 }
+
+
+
+
+
 
 
 /******************************* END OF FILE ***********************************/

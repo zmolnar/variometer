@@ -1,17 +1,17 @@
-/* SerialHandlerThread.h --- 
+/* ButtonHandler.h --- 
  * 
- * @file SerialHandlerThread.h
- * @brief Thread to handle serial communication interfaces.
+ * @file ButtonHandler.h
+ * @brief Button handler module.
  * @author Molnár Zoltán
- * @date Mon May 16 21:07:58 2016 (+0200)
- * Version: 
- * Last-Updated: Mon Aug 22 18:50:04 2016 (+0200)
+ * @date Mon Aug 22 19:51:57 2016 (+0200)
+ * Version: 1.0.0
+ * Last-Updated: Mon Aug 22 21:05:15 2016 (+0200)
  *           By: Molnár Zoltán
  * 
  */
 
-#ifndef __SERIALHANDLERTHREAD_H
-#define __SERIALHANDLERTHREAD_H
+#ifndef __BUTTONHANDLER_H
+#define __BUTTONHANDLER_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -31,10 +31,7 @@
 /*******************************************************************************/
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
-typedef enum {
-        SERIAL_EVENT_LK8EX1_READY = 0,
-        SERIAL_EVENT_GPS_DATA_RECEIVED = 1
-} SerialEvent_t;
+
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL VARIABLES                                             */
@@ -44,9 +41,9 @@ typedef enum {
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL FUNCTIONS                                             */
 /*******************************************************************************/
-THD_FUNCTION(SerialHandlerThread, arg);
+THD_FUNCTION(ButtonHandlerThread, arg);
 
-#endif /* SERIALHANDLERTHREAD_H */
+#endif /* BUTTONHANDLER_H */
 
 /******************************* END OF FILE ***********************************/
 

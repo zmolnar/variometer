@@ -59,6 +59,7 @@
 #define GPIOA_KOBO_RX           10
 
 #define GPIOB_BUZZER             6
+#define GPIOB_BUTTON             8
 #define GPIOB_LED               12
 
 /*

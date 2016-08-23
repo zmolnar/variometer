@@ -5,8 +5,8 @@
  * @author Zoltán Molnár
  * @date szo dec 19 14:11:02 2015 (+0100)
  * Version: 
- * Last-Updated: Sat Mar 12 17:53:16 2016 (+0100)
- *           By: Zoltán Molnár
+ * Last-Updated: Mon Aug 22 19:08:21 2016 (+0200)
+ *           By: Molnár Zoltán
  * 
  */
 
@@ -48,7 +48,6 @@ static PWMConfig pwmcfg = {
         /* HW dependent part.*/
         0,
         0,
-        0
 };
 
 /*******************************************************************************/
@@ -62,62 +61,33 @@ static PWMConfig pwmcfg = {
 THD_FUNCTION(BeepControlThread, arg)
 {
         (void) arg;
+        pwmcfg.period = FREQ_TO_TICK(2000);
+        pwmStop (&PWMD4);                
+        pwmStart (&PWMD4, &pwmcfg);
+        pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
+        
+        chThdSleepMilliseconds (50);
+
+        pwmcfg.period = FREQ_TO_TICK(0);
+        pwmStop (&PWMD4);                
+        pwmStart (&PWMD4, &pwmcfg);
+        pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
+
+        chThdSleepMilliseconds (50);
+
+        pwmcfg.period = FREQ_TO_TICK(2000);
+        pwmStop (&PWMD4);                
+        pwmStart (&PWMD4, &pwmcfg);
+        pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
+        
+        chThdSleepMilliseconds (50);
+
+        pwmcfg.period = FREQ_TO_TICK(0);
+        pwmStop (&PWMD4);                
+        pwmStart (&PWMD4, &pwmcfg);
+        pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
 
         while (1) {
-                pwmcfg.period = FREQ_TO_TICK(400);
-                pwmStop (&PWMD4);                
-                pwmStart (&PWMD4, &pwmcfg);
-                pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
-                
-                chThdSleepMilliseconds (500);
-
-                pwmcfg.period = FREQ_TO_TICK(0);
-                pwmStop (&PWMD4);                
-                pwmStart (&PWMD4, &pwmcfg);
-                pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
-
-                chThdSleepMilliseconds (500);
-
-                pwmcfg.period = FREQ_TO_TICK(600);
-                pwmStop (&PWMD4);                
-                pwmStart (&PWMD4, &pwmcfg);
-                pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
-                
-                chThdSleepMilliseconds (500);
-
-                pwmcfg.period = FREQ_TO_TICK(0);
-                pwmStop (&PWMD4);                
-                pwmStart (&PWMD4, &pwmcfg);
-                pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
-
-                chThdSleepMilliseconds (500);
-
-                pwmcfg.period = FREQ_TO_TICK(1100);
-                pwmStop (&PWMD4);                
-                pwmStart (&PWMD4, &pwmcfg);
-                pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
-                
-                chThdSleepMilliseconds (400);
-
-                pwmcfg.period = FREQ_TO_TICK(0);
-                pwmStop (&PWMD4);                
-                pwmStart (&PWMD4, &pwmcfg);
-                pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
-
-                chThdSleepMilliseconds (400);
-
-                pwmcfg.period = FREQ_TO_TICK(1200);
-                pwmStop (&PWMD4);                
-                pwmStart (&PWMD4, &pwmcfg);
-                pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
-                
-                chThdSleepMilliseconds (300);
-
-                pwmcfg.period = FREQ_TO_TICK(0);
-                pwmStop (&PWMD4);                
-                pwmStart (&PWMD4, &pwmcfg);
-                pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
-
                 chThdSleepMilliseconds (300);
         }
 }
