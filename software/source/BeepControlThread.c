@@ -5,7 +5,11 @@
  * @author Zoltán Molnár
  * @date szo dec 19 14:11:02 2015 (+0100)
  * Version: 
+<<<<<<< HEAD
  * Last-Updated: Sun Aug 28 16:00:48 2016 (+0200)
+=======
+ * Last-Updated: Mon Aug 22 19:08:21 2016 (+0200)
+>>>>>>> a9b4e0d05510d08daf4e2076668174f91ebb4299
  *           By: Molnár Zoltán
  * 
  */
@@ -108,6 +112,7 @@ static void play_shutdown_signal (void)
 THD_FUNCTION(BeepControlThread, arg)
 {
         (void) arg;
+<<<<<<< HEAD
         set_pwm (2000, VOLUME_HIGH);
         chThdSleepMilliseconds (50);
 
@@ -146,6 +151,36 @@ THD_FUNCTION(BeepControlThread, arg)
                                 play_shutdown_signal();
                         }
                 }
+=======
+        pwmcfg.period = FREQ_TO_TICK(2000);
+        pwmStop (&PWMD4);                
+        pwmStart (&PWMD4, &pwmcfg);
+        pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
+        
+        chThdSleepMilliseconds (50);
+
+        pwmcfg.period = FREQ_TO_TICK(0);
+        pwmStop (&PWMD4);                
+        pwmStart (&PWMD4, &pwmcfg);
+        pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
+
+        chThdSleepMilliseconds (50);
+
+        pwmcfg.period = FREQ_TO_TICK(2000);
+        pwmStop (&PWMD4);                
+        pwmStart (&PWMD4, &pwmcfg);
+        pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
+        
+        chThdSleepMilliseconds (50);
+
+        pwmcfg.period = FREQ_TO_TICK(0);
+        pwmStop (&PWMD4);                
+        pwmStart (&PWMD4, &pwmcfg);
+        pwmEnableChannelI (&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, 5000));
+
+        while (1) {
+                chThdSleepMilliseconds (300);
+>>>>>>> a9b4e0d05510d08daf4e2076668174f91ebb4299
         }
 }
 
