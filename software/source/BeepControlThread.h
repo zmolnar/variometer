@@ -5,8 +5,8 @@
  * @author Zoltán Molnár
  * @date szo dec 19 14:11:42 2015 (+0100)
  * Version: 
- * Last-Updated: Sat Mar 12 12:53:29 2016 (+0100)
- *           By: Zoltán Molnár
+ * Last-Updated: Sun Aug 28 16:01:13 2016 (+0200)
+ *           By: Molnár Zoltán
  * 
  */
 
@@ -31,12 +31,16 @@
 /*******************************************************************************/
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
-
+typedef enum {
+        UPDATE_BEEPER,
+        STEP_BEEP_VOLUME,
+        SYSTEM_SHUTDOWN
+} BeeperEvent_t;
 
 /*******************************************************************************/
 /* DECLARATIONS OF GLOBAL VARIABLES                                           */
 /*******************************************************************************/
-
+extern event_source_t beeper_event_source;
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL FUNCTIONS                                             */

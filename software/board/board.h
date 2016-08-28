@@ -59,6 +59,7 @@
 #define GPIOA_KOBO_RX           10
 
 #define GPIOB_BUZZER             6
+#define GPIOB_BUTTON             8
 #define GPIOB_LED               12
 
 /*
@@ -106,10 +107,11 @@
  * Port B setup.
  * Everything input with pull-up except:
  * PB6  - Alternate Push Pull output 10MHz.
+ * PB8  - Digital input.
  * PB12 - Push Pull output 2MHz.
  */
 #define VAL_GPIOBCRL            0x89888888      /*  PB7...PB0 */
-#define VAL_GPIOBCRH            0x88828888      /* PB15...PB8 */
+#define VAL_GPIOBCRH            0x88828884      /* PB15...PB8 */
 #define VAL_GPIOBODR            0xFFFFFFFF
 
 /*
@@ -124,6 +126,7 @@
  * Port D setup.
  * Everything input with pull-up except:
  * PD0  - Normal input (XTAL).
+ *
  * PD1  - Normal input (XTAL).
  */
 #define VAL_GPIODCRL            0x88888844      /*  PD7...PD0 */

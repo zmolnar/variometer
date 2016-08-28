@@ -1,15 +1,17 @@
-/**
- * @file SignalProcessorThread.h
- * @brief Thread to perform processing of raw pressure data.
- * @author Zoltán Molnár
- * @date Wed Dec 23 16:08:47 2015 (+0100)
- * Version: 
- * Last-Updated: Sat Aug 27 09:23:32 2016 (+0200)
+/* ButtonHandler.h --- 
+ * 
+ * @file ButtonHandler.h
+ * @brief Button handler module.
+ * @author Molnár Zoltán
+ * @date Mon Aug 22 19:51:57 2016 (+0200)
+ * Version: 1.0.0
+ * Last-Updated: Mon Aug 22 21:05:15 2016 (+0200)
  *           By: Molnár Zoltán
-*/
+ * 
+ */
 
-#ifndef _SIGNALPROCESSORTHREAD_H
-#define _SIGNALPROCESSORTHREAD_H
+#ifndef __BUTTONHANDLER_H
+#define __BUTTONHANDLER_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -20,24 +22,28 @@
 /* DEFINED CONSTANTS                                                           */
 /*******************************************************************************/
 
+
 /*******************************************************************************/
 /* MACRO DEFINITIONS                                                           */
 /*******************************************************************************/
+
 
 /*******************************************************************************/
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
 
+
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL VARIABLES                                             */
 /*******************************************************************************/
 
+
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL FUNCTIONS                                             */
 /*******************************************************************************/
-THD_FUNCTION(SignalProcessorThread, arg);
+THD_FUNCTION(ButtonHandlerThread, arg);
 
-#endif /* _SIGNALPROCESSORTHREAD_H */
+#endif /* BUTTONHANDLER_H */
 
 /******************************* END OF FILE ***********************************/
 
