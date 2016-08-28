@@ -5,11 +5,7 @@
  * @author Molnár Zoltán
  * @date Mon May 16 21:07:58 2016 (+0200)
  * Version: 
-<<<<<<< HEAD
- * Last-Updated: Sun Aug 28 15:57:03 2016 (+0200)
-=======
- * Last-Updated: Mon Aug 22 18:50:04 2016 (+0200)
->>>>>>> a9b4e0d05510d08daf4e2076668174f91ebb4299
+ * Last-Updated: Sun Aug 28 20:33:48 2016 (+0200)
  *           By: Molnár Zoltán
  * 
  */
@@ -33,13 +29,6 @@
 /*******************************************************************************/
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
-<<<<<<< HEAD
-=======
-typedef enum {
-        SERIAL_EVENT_LK8EX1_READY = 0,
-        SERIAL_EVENT_GPS_DATA_RECEIVED = 1
-} SerialEvent_t;
->>>>>>> a9b4e0d05510d08daf4e2076668174f91ebb4299
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL VARIABLES                                             */
