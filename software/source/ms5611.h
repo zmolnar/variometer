@@ -1,15 +1,11 @@
 /**
  * @file ms5611.h
  * @brief MS5611 barometric pressure sensor driver interface.
- * @author Zoltán Molnár
- * @date Wed Dec 23 15:28:16 2015 (+0100)
- * Version: 
- * Last-Updated: Sun Jan 17 17:30:23 2016 (+0100)
- *           By: Molnár Zoltán
+ * @author Zoltán, Molnár
  */
 
-#ifndef __MS5611_H
-#define __MS5611_H
+#ifndef MS5611_H
+#define MS5611_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -42,12 +38,12 @@
 /**
  * Initialize MS5611 serial interface.
  */
-void MS5611_Init (void);
+void MS5611_Init(void);
 
 /**
  * Send reset command and read calibration constants from MS5611.
  */
-void MS5611_Start (void);
+void MS5611_Start(void);
 
 /**
  * Read raw pressure and temperature values from MS5611.
@@ -55,9 +51,9 @@ void MS5611_Start (void);
  *               raw pressure value.
  * @param[in] pT Pointer to the variable to store raw temperature value.
  */
-void MS5611_Measure (uint32_t *pP, int32_t *pT);
+void MS5611_Measure(uint32_t *pP, int32_t *pT);
 
-#endif /* MS5611_H */
+#endif
 
 /******************************* END OF FILE ***********************************/
 

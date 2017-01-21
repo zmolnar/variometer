@@ -12,7 +12,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-*/
+ */
 
 #include "ch.h"
 #include "hal.h"
@@ -26,8 +26,10 @@
  * Thread working area definitions.
  */
 static THD_WORKING_AREA(waBeepControl, 128);
+#if 0
 static THD_WORKING_AREA(waPressureReader, 128);
 static THD_WORKING_AREA(waSignalProcessor, 2048);
+#endif
 static THD_WORKING_AREA(waSerialHandler, 128);
 static THD_WORKING_AREA(waButtonHandler, 128);
 
@@ -45,49 +47,75 @@ thread_t *pButtonHandlerThread;
  */
 int main(void) {
 
-        /*
-         * System initializations.
-         * - HAL initialization, this also initializes the configured device drivers
-         *   and performs the board-specific initializations.
-         * - Kernel initialization, the main() function becomes a thread and the
-         *   RTOS is active.
-         */
-        halInit();
-        chSysInit();
+    /*
+     * System initializations.
+     * - HAL initialization, this also initializes the configured device drivers
+     *   and performs the board-specific initializations.
+     * - Kernel initialization, the main() function becomes a thread and the
+     *   RTOS is active.
+     */
+    halInit();
+    chSysInit();
 
-        chThdSleepMilliseconds(2000);
-        palSetPad(GPIOA, GPIOA_SHUTDOWN);
+    /*
+     * Wait 2 seconds here to prevent false startups caused by
+     * pushing the button accidentally.
+     */
+    palClearPad(GPIOA, GPIOA_SHUTDOWN);
+    chThdSleepMilliseconds(2000);
+    palSetPad(GPIOA, GPIOA_SHUTDOWN);
 
-        /*
-         * Create threads.
-         */
-#if 1
-        pPressureReaderThread = chThdCreateStatic (waPressureReader, sizeof(waPressureReader), 
-                                                   NORMALPRIO+4, PressureReaderThread, NULL);
+    /*
+     * Create threads.
+     */
+#if 0
+    pPressureReaderThread = chThdCreateStatic (
+            waPressureReader,
+            sizeof(waPressureReader),
+            NORMALPRIO + 5,
+            PressureReaderThread,
+            NULL);
+#endif
+#if 0
+    pSignalProcessorThread = chThdCreateStatic (
+            waSignalProcessor,
+            sizeof (waSignalProcessor),
+            NORMALPRIO + 4,
+            SignalProcessorThread,
+            NULL);
 #endif
 #if 1
-        pSignalProcessorThread = chThdCreateStatic (waSignalProcessor, sizeof (waSignalProcessor),
-                                                    NORMALPRIO+3, SignalProcessorThread, NULL);
+    pSerialHandlerThread = chThdCreateStatic (
+            waSerialHandler,
+            sizeof (waSerialHandler),
+            NORMALPRIO + 3,
+            SerialHandlerThread,
+            NULL);
 #endif
 #if 1
-        pBeepControlThread = chThdCreateStatic (waBeepControl, sizeof (waBeepControl),
-                                                NORMALPRIO+1, BeepControlThread, NULL);
+    pBeepControlThread = chThdCreateStatic (
+            waBeepControl,
+            sizeof (waBeepControl),
+            NORMALPRIO + 2,
+            BeepControlThread,
+            NULL);
 #endif
 #if 1
-        pSerialHandlerThread = chThdCreateStatic (waSerialHandler, sizeof (waSerialHandler),
-                                                  NORMALPRIO+2, SerialHandlerThread, NULL);
+    pButtonHandlerThread = chThdCreateStatic (
+            waButtonHandler,
+            sizeof (waButtonHandler),
+            NORMALPRIO + 1,
+            ButtonHandlerThread,
+            NULL);
 #endif
-#if 1
-        pButtonHandlerThread = chThdCreateStatic (waButtonHandler, sizeof (waButtonHandler),
-                                                  NORMALPRIO+2, ButtonHandlerThread, NULL);
-#endif
-        /*
-         * Blink heartbeat LED.
-         */
-        while (true) {
-                palClearPad(GPIOB, GPIOB_LED);
-                chThdSleepMilliseconds(500);
-                palSetPad(GPIOB, GPIOB_LED);
-                chThdSleepMilliseconds(500);
-        }
+
+    /*
+     * Blink heartbeat LED.
+     */
+    while (true) {
+        palClearPad(GPIOB, GPIOB_LED);
+        chThdSleepMilliseconds(500);
+        palSetPad(GPIOB, GPIOB_LED);
+        chThdSleepMilliseconds(500);
+    }
 }

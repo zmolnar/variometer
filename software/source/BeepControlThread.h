@@ -2,16 +2,11 @@
  * 
  * @file thrBeepControl.h
  * @brief Beep controller thread.
- * @author Zoltán Molnár
- * @date szo dec 19 14:11:42 2015 (+0100)
- * Version: 
- * Last-Updated: Sun Aug 28 16:01:13 2016 (+0200)
- *           By: Molnár Zoltán
- * 
+ * @author Zoltán, Molnár
  */
 
-#ifndef __THRBEEPCONTROL_H
-#define __THRBEEPCONTROL_H
+#ifndef BEEPCONTROLTHREAD_H
+#define BEEPCONTROLTHREAD_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -32,9 +27,10 @@
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
 typedef enum {
-        UPDATE_BEEPER,
-        STEP_BEEP_VOLUME,
-        SYSTEM_SHUTDOWN
+        START_BEEPER    = (1 << 1),
+        STOP_BEEPER     = (1 << 2),
+        STEP_VOLUME     = (1 << 3),
+        SYSTEM_SHUTDOWN = (1 << 4)
 } BeeperEvent_t;
 
 /*******************************************************************************/
@@ -47,7 +43,7 @@ extern event_source_t beeper_event_source;
 /*******************************************************************************/
 THD_FUNCTION(BeepControlThread, arg);
 
-#endif /* THRBEEPCONTROL_H */
+#endif
 
 /******************************* END OF FILE ***********************************/
 

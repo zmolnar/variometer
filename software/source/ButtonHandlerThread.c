@@ -2,12 +2,7 @@
  * 
  * @file ButtonHandler.c
  * @brief Button handler module.
- * @author Molnár Zoltán
- * @date Mon Aug 22 19:51:16 2016 (+0200)
- * Version: 1.0.0
- * Last-Updated: Sun Aug 28 20:35:36 2016 (+0200)
- *           By: Molnár Zoltán
- * 
+ * @author Zoltán, MOLNÁR
  */
 
 /*******************************************************************************/
@@ -39,30 +34,33 @@ static SEMAPHORE_DECL(sem_button, 0);
 static virtual_timer_t vt;
 static systime_t start, end;
 
-static void button_timeout_cb (void *arg)
+static void button_timeout_cb(void *arg)
 {
-        (void)arg;
-        extChannelDisable(&EXTD1, 8);
-        end = start + MS2ST(BUTTON_PRESS_SHUTDOWN_MIN);
-        chSemSignal(&sem_button);
+    (void)arg;
+
+    chSysLockFromISR();
+    extChannelDisableI(&EXTD1, 8);
+    chEvtBroadcastFlagsI(&beeper_event_source, SYSTEM_SHUTDOWN);
+    chSysUnlockFromISR();
 }
 
-static void extcb(EXTDriver *extp, expchannel_t channel) {
-        (void)extp;
-        (void)channel;
+static void extcb(EXTDriver *extp, expchannel_t channel)
+{
+    (void)extp;
+    (void)channel;
 
-        if (PAL_HIGH == palReadPad(GPIOB,GPIOB_BUTTON)) {
-                start = chVTGetSystemTime();
-                chSysLockFromISR();
-                chVTSetI(&vt, MS2ST(5000), button_timeout_cb, NULL);
-                chSysUnlockFromISR();
-        } else {
-                end = chVTGetSystemTime();
-                chSysLockFromISR();
-                chVTResetI(&vt);
-                chSysUnlockFromISR();
-                chSemSignal(&sem_button);
-        }
+    if (PAL_HIGH == palReadPad(GPIOB,GPIOB_BUTTON)) {
+        start = chVTGetSystemTimeX();
+        chSysLockFromISR();
+        chVTSetI(&vt, MS2ST(BUTTON_PRESS_SHUTDOWN_MIN), button_timeout_cb, NULL);
+        chSysUnlockFromISR();
+    } else {
+        end = chVTGetSystemTimeX();
+        chSysLockFromISR();
+        chVTResetI(&vt);
+        chSysUnlockFromISR();
+        chSemSignal(&sem_button);
+    }
 }
 
 
@@ -96,28 +94,28 @@ static const EXTConfig extcfg = {
 /*******************************************************************************/
 THD_FUNCTION(ButtonHandlerThread, arg)
 {
-        (void)arg;
-        
-        chSemObjectInit(&sem_button, 0);
-        extStart(&EXTD1, &extcfg);
-        extChannelEnable(&EXTD1, 8);
+    (void)arg;
 
-        while(1) {
-               chSemWait(&sem_button); 
-               systime_t dt = end - start;
-               if (end < start)
-                       dt += (systime_t)(-1);
+    chThdSleepMilliseconds(2000);
 
-               uint32_t t = ST2MS(dt);
+    chSemObjectInit(&sem_button, 0);
+    extStart(&EXTD1, &extcfg);
+    extChannelEnable(&EXTD1, 8);
 
-               if ((BUTTON_PRESS_STEP_VOLUME_MIN <= t) && (t < BUTTON_PRESS_STEP_VOLUME_MAX)) {
-                       chEvtBroadcastFlags (&beeper_event_source, STEP_BEEP_VOLUME);
-               } else if ((BUTTON_PRESS_SHUTDOWN_MIN <= t)) {
-                       chEvtBroadcastFlags (&beeper_event_source, SYSTEM_SHUTDOWN);
-               } else {
-                       ;
-               }
+    while(1) {
+        chSemWait(&sem_button);
+        systime_t dt = end - start;
+        if (end < start)
+            dt += (systime_t)(-1);
+
+        uint32_t t = ST2MS(dt);
+
+        if ((BUTTON_PRESS_STEP_VOLUME_MIN <= t) &&
+            (t < BUTTON_PRESS_STEP_VOLUME_MAX)) {
+            chEvtBroadcastFlags(&beeper_event_source, STEP_VOLUME);
         }
+    }
 }
+
 /******************************* END OF FILE ***********************************/
 

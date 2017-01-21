@@ -1,12 +1,8 @@
 /**
  * @file PressureReaderThread.c
  * @brief Thread that periodically reads measurement data from MS5611 sensor. 
- * @author Zoltán Molnár
- * @date Wed Dec 23 15:24:40 2015 (+0100)
- * Version: 
- * Last-Updated: Sat Aug 27 09:22:52 2016 (+0200)
- *           By: Molnár Zoltán
-*/
+ * @author Zoltán, Molnár
+ */
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -44,18 +40,19 @@ extern thread_t *pSignalProcessorThread;
 /*******************************************************************************/
 THD_FUNCTION(PressureReaderThread, arg)
 {
-        (void)arg;
-        chRegSetThreadName("PressureReaderThread");   
-        
-        MS5611_Init ();
-        MS5611_Start ();
-        
-        while (1) {
-                struct PressureData_s data = {0};
-                MS5611_Measure (&data.p_raw, &data.t_raw);
-                data.t = chVTGetSystemTime();
-                chMsgSend (pSignalProcessorThread, (msg_t)&data);
-        }
+    (void)arg;
+
+    chRegSetThreadName("PressureReaderThread");
+
+    MS5611_Init();
+    MS5611_Start();
+
+    while (1) {
+        struct PressureData_s data = {0};
+        MS5611_Measure(&data.p_raw, &data.t_raw);
+        data.t = chVTGetSystemTime();
+        chMsgSend(pSignalProcessorThread, (msg_t)&data);
+    }
 }
 
 

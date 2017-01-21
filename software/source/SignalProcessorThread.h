@@ -1,15 +1,11 @@
 /**
  * @file SignalProcessorThread.h
  * @brief Thread to perform processing of raw pressure data.
- * @author Zoltán Molnár
- * @date Wed Dec 23 16:08:47 2015 (+0100)
- * Version: 
- * Last-Updated: Sat Aug 27 09:23:32 2016 (+0200)
- *           By: Molnár Zoltán
+ * @author Zoltán, Molnár
 */
 
-#ifndef _SIGNALPROCESSORTHREAD_H
-#define _SIGNALPROCESSORTHREAD_H
+#ifndef SIGNALPROCESSORTHREAD_H
+#define SIGNALPROCESSORTHREAD_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -31,13 +27,16 @@
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL VARIABLES                                             */
 /*******************************************************************************/
+extern mutex_t dsp_mutex;
+extern float dsp_vario;
+extern float dsp_pfil;
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL FUNCTIONS                                             */
 /*******************************************************************************/
 THD_FUNCTION(SignalProcessorThread, arg);
 
-#endif /* _SIGNALPROCESSORTHREAD_H */
+#endif
 
 /******************************* END OF FILE ***********************************/
 

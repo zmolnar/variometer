@@ -2,14 +2,10 @@
  * @file PressureReaderThread.h
  * @brief Thread that periodically reads measurement data from MS5611 sensor. 
  * @author Zoltán Molnár
- * @date Wed Dec 23 15:22:58 2015 (+0100)
- * Version: 
- * Last-Updated: Sat Aug 27 09:23:19 2016 (+0200)
- *           By: Molnár Zoltán
-*/
+ */
 
-#ifndef _PRESSUREREADERTHREAD_H
-#define _PRESSUREREADERTHREAD_H
+#ifndef PRESSUREREADERTHREAD_H
+#define PRESSUREREADERTHREAD_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -28,9 +24,9 @@
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
 struct PressureData_s {
-        systime_t t;
-        uint32_t p_raw;
-        int32_t t_raw;
+    systime_t t;
+    uint32_t p_raw;
+    int32_t t_raw;
 };
 
 /*******************************************************************************/
@@ -42,7 +38,7 @@ struct PressureData_s {
 /*******************************************************************************/
 THD_FUNCTION(PressureReaderThread, arg);
 
-#endif /* _PRESSUREREADERTHREAD_H */
+#endif
 
 /******************************* END OF FILE ***********************************/
 

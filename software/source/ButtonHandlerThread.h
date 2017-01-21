@@ -3,15 +3,10 @@
  * @file ButtonHandler.h
  * @brief Button handler module.
  * @author Molnár Zoltán
- * @date Mon Aug 22 19:51:57 2016 (+0200)
- * Version: 1.0.0
- * Last-Updated: Mon Aug 22 21:05:15 2016 (+0200)
- *           By: Molnár Zoltán
- * 
  */
 
-#ifndef __BUTTONHANDLER_H
-#define __BUTTONHANDLER_H
+#ifndef BUTTONHANDLERTHREAD_H
+#define BUTTONHANDLERTHREAD_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -43,7 +38,7 @@
 /*******************************************************************************/
 THD_FUNCTION(ButtonHandlerThread, arg);
 
-#endif /* BUTTONHANDLER_H */
+#endif
 
 /******************************* END OF FILE ***********************************/
 

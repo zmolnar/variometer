@@ -2,14 +2,10 @@
  * @file NmeaGeneratorThread.h
  * @brief Thread to generate NMEA messages.
  * @author Zoltan, Molnar
- * @date Tue Aug 30 08:10:18 2016 (+0200)
- * @version: 1.0.0
- * Last-Updated: Tue Aug 30 08:47:05 2016 (+0200)
- *           By: zoltan.molnar
 */
 
-#ifndef _NMEAGENERATORTHREAD_H
-#define _NMEAGENERATORTHREAD_H
+#ifndef NMEAGENERATORTHREAD_H
+#define NMEAGENERATORTHREAD_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -39,7 +35,7 @@ extern semaphore_t nmea_message_sent;
 /*******************************************************************************/
 THD_FUNCTION(NmeaGeneratorThread, arg);
 
-#endif /* _NMEAGENERATORTHREAD_H */
+#endif
 
 /******************************* END OF FILE ***********************************/
 

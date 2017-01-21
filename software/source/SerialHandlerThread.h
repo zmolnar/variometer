@@ -2,16 +2,11 @@
  * 
  * @file SerialHandlerThread.h
  * @brief Thread to handle serial communication interfaces.
- * @author Molnár Zoltán
- * @date Mon May 16 21:07:58 2016 (+0200)
- * Version: 
- * Last-Updated: Sun Aug 28 20:33:48 2016 (+0200)
- *           By: Molnár Zoltán
- * 
+ * @author Zoltán, Molnár
  */
 
-#ifndef __SERIALHANDLERTHREAD_H
-#define __SERIALHANDLERTHREAD_H
+#ifndef SERIALHANDLERTHREAD_H
+#define SERIALHANDLERTHREAD_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -29,17 +24,21 @@
 /*******************************************************************************/
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
+typedef enum {
+    LK8EX1_READY_TO_SEND = (1 << 0)
+} SerialEvent_t;
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL VARIABLES                                             */
 /*******************************************************************************/
+extern event_source_t serial_event_source;
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL FUNCTIONS                                             */
 /*******************************************************************************/
 THD_FUNCTION(SerialHandlerThread, arg);
 
-#endif /* SERIALHANDLERTHREAD_H */
+#endif
 
 /******************************* END OF FILE ***********************************/
 
