@@ -23,15 +23,18 @@
 #include "SerialHandlerThread.h"
 #include "ButtonHandlerThread.h"
 
+#define SIMULATED_DATA
+
 /*
  * Thread working area definitions.
  */
 static THD_WORKING_AREA(waBeepControl, 2048);
-#if 0
+#ifndef SIMULATED_DATA
 static THD_WORKING_AREA(waPressureReader, 128);
 static THD_WORKING_AREA(waSignalProcessor, 2048);
-#endif
+#else
 static THD_WORKING_AREA(waSimulator, 128);
+#endif
 static THD_WORKING_AREA(waSerialHandler, 128);
 static THD_WORKING_AREA(waButtonHandler, 1024);
 
@@ -39,9 +42,12 @@ static THD_WORKING_AREA(waButtonHandler, 1024);
  * Thread references.
  */
 thread_t *pBeepControlThread;
+#ifndef SIMULATED_DATA
 thread_t *pPressureReaderThread;
 thread_t *pSignalProcessorThread;
+#else
 thread_t *pSimulatorThread;
+#endif
 thread_t *pSerialHandlerThread;
 thread_t *pButtonHandlerThread;
 
@@ -71,7 +77,7 @@ int main(void) {
     /*
      * Create threads.
      */
-#if 0
+#ifndef SIMULATED_DATA
     pPressureReaderThread = chThdCreateStatic (
             waPressureReader,
             sizeof(waPressureReader),

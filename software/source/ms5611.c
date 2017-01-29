@@ -1,7 +1,7 @@
 /**
  * @file ms5611.c
  * @brief MS5611 barometric pressure sensor driver interface.
- * @author Zoltán Molnár
+ * @author Molnar Zoltan
  */
 
 /*******************************************************************************/
@@ -68,7 +68,7 @@ typedef enum ms5611_prom_register {
 /**
  * Macro to calculate command byte for reading specific PROM register.
  */
-#define MS5611_CMD_PROM_READ(reg) (MS5611_CMD_PROM_READ_BASE | ((reg)<<1))
+#define MS5611_READ_PROM_REGISTER_CMD(reg) (MS5611_CMD_PROM_READ_BASE | ((reg)<<1))
 
 /*******************************************************************************/
 /* DEFINITIONS OF GLOBAL CONSTANTS AND VARIABLES                               */
@@ -105,7 +105,7 @@ static uint16_t C6 = 0;  /**< Temperature coefficient of the temperature | TEMPS
 /**
  * Send reset sequence to the MS5611.
  */
-static void ms5611_reset(void)
+static void ms5611Reset(void)
 {
     uint8_t cmd = MS5611_CMD_RESET;
 
@@ -120,9 +120,9 @@ static void ms5611_reset(void)
  * @param[in] Reg Identifier of the register to read
  * @retval Register value
  */
-static uint32_t ms5611_read_reg(const ms5611_prom_register_t Reg)
+static uint32_t ms5611ReadRegister(const ms5611_prom_register_t Reg)
 {
-    uint8_t cmd = MS5611_CMD_PROM_READ(Reg);
+    uint8_t cmd = MS5611_READ_PROM_REGISTER_CMD(Reg);
     uint8_t tmp[2];
 
     spiSelect(MS5611_SPI);
@@ -142,7 +142,7 @@ static uint32_t ms5611_read_reg(const ms5611_prom_register_t Reg)
  *            MS5611_TEMP     : read uncompensated temperature
  * @return The result of the conversation.
  */
-static uint32_t ms5611_convert(ms5611_data_t data)
+static uint32_t ms5611Convert(ms5611_data_t data)
 {
     uint8_t cmd = 0;
     uint8_t tmp[3];
@@ -189,20 +189,20 @@ void MS5611_Init(void)
 
 void MS5611_Start (void)
 {
-    ms5611_reset();
+    ms5611Reset();
     chThdSleepMilliseconds(250);
-    C1 = ms5611_read_reg(MS5611_PROM_C1);
-    C2 = ms5611_read_reg(MS5611_PROM_C2);
-    C3 = ms5611_read_reg(MS5611_PROM_C3);
-    C4 = ms5611_read_reg(MS5611_PROM_C4);
-    C5 = ms5611_read_reg(MS5611_PROM_C5);
-    C6 = ms5611_read_reg(MS5611_PROM_C6);
+    C1 = ms5611ReadRegister(MS5611_PROM_C1);
+    C2 = ms5611ReadRegister(MS5611_PROM_C2);
+    C3 = ms5611ReadRegister(MS5611_PROM_C3);
+    C4 = ms5611ReadRegister(MS5611_PROM_C4);
+    C5 = ms5611ReadRegister(MS5611_PROM_C5);
+    C6 = ms5611ReadRegister(MS5611_PROM_C6);
 }
 
 void MS5611_Measure(uint32_t *pP, int32_t *pT)
 {
-    uint32_t D1 = ms5611_convert(MS5611_PRESSURE);
-    uint32_t D2 = ms5611_convert(MS5611_TEMP);
+    uint32_t D1 = ms5611Convert(MS5611_PRESSURE);
+    uint32_t D2 = ms5611Convert(MS5611_TEMP);
     int64_t dT = (int64_t)D2 - ((uint64_t)C5 << 8);
     int64_t TEMP = 2000 + ((dT * (int64_t)C6) >> 23);
     int64_t OFF = ((uint64_t)C2 << 16) + (((int64_t)C4 * dT) >> 7);

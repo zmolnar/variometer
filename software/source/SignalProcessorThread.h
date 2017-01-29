@@ -1,8 +1,8 @@
 /**
  * @file SignalProcessorThread.h
  * @brief Thread to perform processing of raw pressure data.
- * @author Zoltán, Molnár
-*/
+ * @author Molnar Zoltan
+ */
 
 #ifndef SIGNALPROCESSORTHREAD_H
 #define SIGNALPROCESSORTHREAD_H

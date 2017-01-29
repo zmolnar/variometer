@@ -1,7 +1,7 @@
 /**
  * @file ms5611.h
  * @brief MS5611 barometric pressure sensor driver interface.
- * @author Zoltán, Molnár
+ * @author Molnar Zoltan
  */
 
 #ifndef MS5611_H

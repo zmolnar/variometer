@@ -1,9 +1,7 @@
-/* SerialHandlerThread.c --- 
- * 
+/**
  * @file SerialHandlerThread.c
  * @brief Thread to handle serial communication interfaces.
- * @author Zoltán, Molnár
- * 
+ * @author Molnar Zoltan
  */
 
 /*******************************************************************************/

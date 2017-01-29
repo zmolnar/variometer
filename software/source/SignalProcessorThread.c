@@ -1,7 +1,7 @@
 /**
  * @file SignalProcessorThread.c
  * @brief Thread to perform processing of raw pressure data.
- * @author Molnár Zoltán
+ * @author Molnar Zoltan
  */
 
 /*******************************************************************************/
@@ -85,7 +85,7 @@ static float ab_filter(
     return xk;
 }
 
-static float calc_slope(
+static float calculateSlope(
         float *buffer,
         size_t bufferLength,
         size_t startIndex,
@@ -171,7 +171,7 @@ THD_FUNCTION(SignalProcessorThread, arg)
             continue;
         }
 
-        float vario = calc_slope(
+        float vario = calculateSlope(
                 altitudeBuffer,
                 BUFLENGTH,
                 sampleIndex % BUFLENGTH,

@@ -1,7 +1,7 @@
-/*
+/**
  * @file ButtonHandler.c
  * @brief Button handler module.
- * @author Zoltán, MOLNÁR
+ * @author Molnar Zoltan
  */
 
 /*******************************************************************************/
@@ -14,9 +14,9 @@
 /*******************************************************************************/
 /* DEFINED CONSTANTS                                                           */
 /*******************************************************************************/
-#define BUTTON_PRESS_STEP_VOLUME_MIN                                           50
-#define BUTTON_PRESS_STEP_VOLUME_MAX                                         1000
-#define BUTTON_PRESS_SHUTDOWN_MIN                                            3000
+#define STEP_VOLUME_MIN                                                        50
+#define STEP_VOLUME_MAX                                                      1000
+#define SHUTDOWN_TIMEOUT                                                     3000
 
 /*******************************************************************************/
 /* MACRO DEFINITIONS                                                           */
@@ -33,7 +33,7 @@ static SEMAPHORE_DECL(sem_button, 0);
 static virtual_timer_t vt;
 static systime_t start, end;
 
-static void button_timeout_cb(void *arg)
+static void shutdownTimeoutCallback(void *arg)
 {
     (void)arg;
 
@@ -43,7 +43,7 @@ static void button_timeout_cb(void *arg)
     chSysUnlockFromISR();
 }
 
-static void extcb(EXTDriver *extp, expchannel_t channel)
+static void buttonInterruptCallback(EXTDriver *extp, expchannel_t channel)
 {
     (void)extp;
     (void)channel;
@@ -51,7 +51,7 @@ static void extcb(EXTDriver *extp, expchannel_t channel)
     if (PAL_HIGH == palReadPad(GPIOB,GPIOB_BUTTON)) {
         start = chVTGetSystemTimeX();
         chSysLockFromISR();
-        chVTSetI(&vt, MS2ST(BUTTON_PRESS_SHUTDOWN_MIN), button_timeout_cb, NULL);
+        chVTSetI(&vt, MS2ST(SHUTDOWN_TIMEOUT), shutdownTimeoutCallback, NULL);
         chSysUnlockFromISR();
     } else {
         end = chVTGetSystemTimeX();
@@ -72,7 +72,7 @@ static const EXTConfig extcfg = {
                 {EXT_CH_MODE_DISABLED, NULL},
                 {EXT_CH_MODE_DISABLED, NULL},
                 {EXT_CH_MODE_DISABLED, NULL},
-                {EXT_CH_MODE_BOTH_EDGES | EXT_MODE_GPIOB, extcb}, 
+                {EXT_CH_MODE_BOTH_EDGES | EXT_MODE_GPIOB, buttonInterruptCallback},
                 {EXT_CH_MODE_DISABLED, NULL},
                 {EXT_CH_MODE_DISABLED, NULL},
                 {EXT_CH_MODE_DISABLED, NULL},
@@ -108,8 +108,7 @@ THD_FUNCTION(ButtonHandlerThread, arg)
 
         uint32_t t = ST2MS(dt);
 
-        if ((BUTTON_PRESS_STEP_VOLUME_MIN <= t) &&
-            (t < BUTTON_PRESS_STEP_VOLUME_MAX)) {
+        if ((STEP_VOLUME_MIN <= t) && (t < STEP_VOLUME_MAX)) {
             chEvtBroadcastFlags(&beeperEvent, STEP_VOLUME);
         }
     }

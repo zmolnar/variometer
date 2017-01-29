@@ -1,7 +1,7 @@
 /**
  * @file NmeaGeneratorThread.h
  * @brief Thread to generate NMEA messages.
- * @author Zoltan, Molnar
+ * @author Molnar Zoltan
 */
 
 #ifndef NMEAGENERATORTHREAD_H

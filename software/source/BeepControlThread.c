@@ -1,4 +1,4 @@
-/*
+/**
  * @file BeepControlThread.c
  * @brief Beep controller thread.
  * @author Molnar Zoltan
@@ -96,6 +96,7 @@ static float silenceDurationLiftMax = 60;
 static BeepControlState_t beepControlState = BEEP_DISABLED;
 static BeepState_t beepState = BEEP_OFF;
 static BeepVolume_t beepVolume = VOLUME_MED;
+
 static uint32_t beepFrequency;
 static uint32_t beepDuration;
 static uint32_t silenceDuration;
@@ -104,7 +105,6 @@ static float actualVario;
 /*******************************************************************************/
 /* DECLARATION OF LOCAL FUNCTIONS                                              */
 /*******************************************************************************/
-static void startBeep(void);
 
 /*******************************************************************************/
 /* DEFINITION OF LOCAL FUNCTIONS                                               */

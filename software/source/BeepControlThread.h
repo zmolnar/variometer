@@ -1,7 +1,7 @@
-/*
+/**
  * @file thrBeepControl.h
  * @brief Beep controller thread.
- * @author Molnár Zoltán
+ * @author Molnar Zoltan
  */
 
 #ifndef BEEPCONTROLTHREAD_H

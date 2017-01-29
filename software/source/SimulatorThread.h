@@ -1,8 +1,8 @@
 /**
  * @file SimulatorThread.h
  * @brief Thread to simulate processed data.
- * @author Molnár Zoltán
-*/
+ * @author Molnar Zoltan
+ */
 
 #ifndef SIMULATORTHREAD_H
 #define SIMULATORTHREAD_H

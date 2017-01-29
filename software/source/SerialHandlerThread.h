@@ -1,8 +1,7 @@
-/* SerialHandlerThread.h --- 
- * 
+/**
  * @file SerialHandlerThread.h
  * @brief Thread to handle serial communication interfaces.
- * @author Zoltán, Molnár
+ * @author Molnar Zoltan
  */
 
 #ifndef SERIALHANDLERTHREAD_H

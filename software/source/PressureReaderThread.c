@@ -1,7 +1,7 @@
 /**
  * @file PressureReaderThread.c
  * @brief Thread that periodically reads measurement data from MS5611 sensor. 
- * @author Zoltán, Molnár
+ * @author Molnar Zoltan
  */
 
 /*******************************************************************************/
