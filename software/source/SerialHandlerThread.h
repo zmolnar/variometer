@@ -31,7 +31,7 @@ typedef enum {
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL VARIABLES                                             */
 /*******************************************************************************/
-extern event_source_t serial_event_source;
+extern event_source_t serialEvent;
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL FUNCTIONS                                             */

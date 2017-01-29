@@ -1,5 +1,4 @@
-/* ButtonHandler.c --- 
- * 
+/*
  * @file ButtonHandler.c
  * @brief Button handler module.
  * @author Zoltán, MOLNÁR
@@ -40,7 +39,7 @@ static void button_timeout_cb(void *arg)
 
     chSysLockFromISR();
     extChannelDisableI(&EXTD1, 8);
-    chEvtBroadcastFlagsI(&beeper_event_source, SYSTEM_SHUTDOWN);
+    chEvtBroadcastFlagsI(&beeperEvent, SYSTEM_SHUTDOWN);
     chSysUnlockFromISR();
 }
 
@@ -62,7 +61,6 @@ static void extcb(EXTDriver *extp, expchannel_t channel)
         chSemSignal(&sem_button);
     }
 }
-
 
 static const EXTConfig extcfg = {
         {
@@ -112,7 +110,7 @@ THD_FUNCTION(ButtonHandlerThread, arg)
 
         if ((BUTTON_PRESS_STEP_VOLUME_MIN <= t) &&
             (t < BUTTON_PRESS_STEP_VOLUME_MAX)) {
-            chEvtBroadcastFlags(&beeper_event_source, STEP_VOLUME);
+            chEvtBroadcastFlags(&beeperEvent, STEP_VOLUME);
         }
     }
 }

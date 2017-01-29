@@ -1,8 +1,7 @@
-/* ButtonHandler.h --- 
- * 
+/*
  * @file ButtonHandler.h
  * @brief Button handler module.
- * @author Molnár Zoltán
+ * @author Zoltán, Molnár
  */
 
 #ifndef BUTTONHANDLERTHREAD_H

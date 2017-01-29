@@ -1,14 +1,14 @@
 /**
- * @file PressureReaderThread.c
- * @brief Thread that periodically reads measurement data from MS5611 sensor. 
- * @author Zoltán, Molnár
+ * @file SimulatorThread.c
+ * @brief Thread to simulate processed data.
+ * @author Molnar Zoltan
  */
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
 /*******************************************************************************/
-#include "PressureReaderThread.h"
-#include "ms5611.h"
+#include "SignalProcessorThread.h"
+#include "hal.h"
 
 /*******************************************************************************/
 /* DEFINED CONSTANTS                                                           */
@@ -25,7 +25,6 @@
 /*******************************************************************************/
 /* DEFINITION OF GLOBAL CONSTANTS AND VARIABLES                                */
 /*******************************************************************************/
-extern thread_t *pSignalProcessorThread;
 
 /*******************************************************************************/
 /* DECLARATION OF LOCAL FUNCTIONS                                              */
@@ -38,20 +37,37 @@ extern thread_t *pSignalProcessorThread;
 /*******************************************************************************/
 /* DEFINITION OF GLOBAL FUNCTIONS                                              */
 /*******************************************************************************/
-THD_FUNCTION(PressureReaderThread, arg)
+THD_FUNCTION(SimulatorThread, arg)
 {
     (void)arg;
 
-    chRegSetThreadName("PressureReaderThread");
+    chEvtObjectInit(&signalProcessorEvent);
 
-    MS5611_Init();
-    MS5611_Start();
+    chThdSleepMilliseconds(2000);
 
-    while (1) {
-        struct PressureData_s data = {0};
-        MS5611_Measure(&data.pressure, &data.temperature);
-        data.timestamp = chVTGetSystemTime();
-        chMsgSend(pSignalProcessorThread, (msg_t)&data);
+    float vario = 0;
+    while(1) {
+        while(vario < 7) {
+            vario += 1.0/100.0;
+            chMtxLock(&SignalProcessorMutex);
+            SignalProcessingOutputData.vario = vario;
+            chMtxUnlock(&SignalProcessorMutex);
+
+            chEvtBroadcastFlags(&signalProcessorEvent, CALCULATION_FINISHED);
+            chThdSleepMilliseconds(20);
+        }
+#if 1
+        while((-6) < vario) {
+            vario -= 1.0/100.0;
+            chMtxLock(&SignalProcessorMutex);
+            SignalProcessingOutputData.vario = vario;
+            chMtxUnlock(&SignalProcessorMutex);
+
+            chEvtBroadcastFlags(&signalProcessorEvent, CALCULATION_FINISHED);
+            chThdSleepMilliseconds(20);
+        }
+#endif
+        vario = 0;
     }
 }
 

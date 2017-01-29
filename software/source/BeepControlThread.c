@@ -1,15 +1,14 @@
-/* BeepControlThread.c --- 
- * 
+/*
  * @file BeepControlThread.c
  * @brief Beep controller thread.
- * @author Zoltán, Molnár
- * 
+ * @author Molnar Zoltan
  */
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
 /*******************************************************************************/
 #include "BeepControlThread.h"
+#include "SignalProcessorThread.h"
 #include "ch.h"
 #include "hal.h"
 
@@ -17,12 +16,13 @@
 /* DEFINED CONSTANTS                                                           */
 /*******************************************************************************/
 
-
 /*******************************************************************************/
 /* MACRO DEFINITIONS                                                           */
 /*******************************************************************************/
-#define TIM_BASE_CLK                                                    (1000000)
-#define FREQ_TO_TICK(freq)                 ((freq) ? (TIM_BASE_CLK / (freq)) : 0)
+#define PWM_TIM_BASE_CLK                                                (1000000)
+#define FREQ_TO_TICK(freq)             ((freq) ? (PWM_TIM_BASE_CLK / (freq)) : 0)
+#define BEEP_TIM_BASE_CLK                                                (200000)
+#define MS2TIMTICK(x)                            ((x) * BEEP_TIM_BASE_CLK / 1000)
 
 /*******************************************************************************/
 /* TYPE DEFINITIONS                                                            */
@@ -34,11 +34,22 @@ typedef enum {
     VOLUME_HIGH = 5000
 } BeepVolume_t;
 
+typedef enum {
+    BEEP_LIFTING,
+    BEEP_SINKING,
+    BEEP_DISABLED
+} BeepControlState_t;
+
+typedef enum {
+    BEEP_ON,
+    BEEP_OFF
+} BeepState_t;
+
 /*******************************************************************************/
 /* DEFINITIONS OF GLOBAL CONSTANTS AND VARIABLES                               */
 /*******************************************************************************/
 static PWMConfig pwmcfg = {
-        TIM_BASE_CLK,
+        PWM_TIM_BASE_CLK,
         0,
         NULL,
         {
@@ -52,57 +63,270 @@ static PWMConfig pwmcfg = {
         0,
 };
 
-EVENTSOURCE_DECL(beeper_event_source);
+static void timerCallback(GPTDriver *gptp);
 
-static BeepVolume_t volume = VOLUME_HIGH;
+static GPTConfig beepTimerConfig =
+{
+        BEEP_TIM_BASE_CLK,           /* Timer clock.*/
+        timerCallback,               /* Timer callback function.*/
+        /* HW dependent part.*/
+        0,
+        0
+};
+
+EVENTSOURCE_DECL(beeperEvent);
+
+static float liftThreshold = 0.6;
+static float liftOffThreshold = 0.2;
+static float sinkThreshold = -1;
+static float sinkOffThreshold = -0.6;
+
+static float maximumLift = 6;
+static float liftFreqBase = 600;
+static float liftFreqMax = 1500;
+static float maximumSink = (-6);
+static float sinkFreqBase = 400;
+static float sinkFreqMin = 150;
+
+static float beepDurationLiftMin = 350;
+static float beepDurationLiftMax = 100;
+static float silenceDurationLiftMin = 230;
+static float silenceDurationLiftMax = 60;
+
+static BeepControlState_t beepControlState = BEEP_DISABLED;
+static BeepState_t beepState = BEEP_OFF;
+static BeepVolume_t beepVolume = VOLUME_MED;
+static uint32_t beepFrequency;
+static uint32_t beepDuration;
+static uint32_t silenceDuration;
+static float actualVario;
+
+/*******************************************************************************/
+/* DECLARATION OF LOCAL FUNCTIONS                                              */
+/*******************************************************************************/
+static void startBeep(void);
 
 /*******************************************************************************/
 /* DEFINITION OF LOCAL FUNCTIONS                                               */
 /*******************************************************************************/
-static void set_pwm(uint32_t freq, BeepVolume_t volume)
+static void setPwmFreqAndDutyCycleI(uint32_t freq, BeepVolume_t volume)
 {
-    pwmcfg.period = FREQ_TO_TICK(freq);
-    pwmStop(&PWMD4);
-    pwmStart(&PWMD4, &pwmcfg);
+    pwmChangePeriodI(&PWMD4, FREQ_TO_TICK(freq));
     pwmEnableChannelI(&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, volume));
 }
 
-static void step_volume(void)
+static void setPwmFreqAndDutyCycle(uint32_t freq, BeepVolume_t volume)
 {
-    if (VOLUME_ZERO == volume) volume = VOLUME_LOW;
-    else if (VOLUME_LOW == volume) volume = VOLUME_MED;
-    else if (VOLUME_MED == volume) volume = VOLUME_HIGH;
-    else if (VOLUME_HIGH == volume) volume = VOLUME_ZERO;
-
-    set_pwm(0, volume);
-    chThdSleepMilliseconds(50);
-    set_pwm(2000, volume);
-    chThdSleepMilliseconds(200);
-    set_pwm(0, volume);
-    chThdSleepMilliseconds(50);
+    pwmChangePeriod(&PWMD4, FREQ_TO_TICK(freq));
+    pwmEnableChannel(&PWMD4, 0, PWM_PERCENTAGE_TO_WIDTH(&PWMD4, volume));
 }
 
-static void play_startup_signal(void)
-{
+static void enableBeepI(void) {
+    setPwmFreqAndDutyCycleI(beepFrequency, beepVolume);
+    beepState = BEEP_ON;
+}
+
+static void disableBeepI(void) {
+    setPwmFreqAndDutyCycleI(0, VOLUME_ZERO);
+    beepState = BEEP_OFF;
+}
+
+static void readMeasurementData(void) {
+    chMtxLock(&SignalProcessorMutex);
+    actualVario = SignalProcessingOutputData.vario;
+    chMtxUnlock(&SignalProcessorMutex);
+}
+
+static void calculateLiftFrequency(void) {
+    float vario = actualVario;
+    if (maximumLift < vario)
+        vario = maximumLift;
+
+    float range = liftFreqMax - liftFreqBase;
+    float unit = range / maximumLift;
+    float offset = vario * unit;
+    beepFrequency = (uint32_t)(liftFreqBase + offset);
+}
+
+static void calculateSinkFrequency(void) {
+    float vario = actualVario;
+    if (vario < maximumSink)
+        vario = maximumSink;
+
+    float range = sinkFreqBase - sinkFreqMin;
+    float unit = range / maximumSink;
+    float offset = vario * unit;
+    beepFrequency = (uint32_t)(sinkFreqBase - offset);
+}
+
+static void calculateBeepFrequency(void) {
+    if (0 < actualVario)
+        calculateLiftFrequency();
+    else
+        calculateSinkFrequency();
+}
+
+static void calculateBeepDuration(void) {
+    float vario = actualVario;
+    if (vario < 0)
+        vario *= (-1);
+
+    float range = beepDurationLiftMax - beepDurationLiftMin;
+    float unit = range / maximumLift;
+    float offset = vario * unit;
+    beepDuration = (uint32_t)(beepDurationLiftMin + offset);
+}
+
+static void calculateSilenceDuration(void) {
+    if (0 < actualVario) {
+        float vario = actualVario;
+        if (maximumLift < vario)
+            vario = maximumLift;
+
+        float range = silenceDurationLiftMax - silenceDurationLiftMin;
+        float unit = range / maximumLift;
+        float offset = vario * unit;
+        silenceDuration = (uint32_t)(silenceDurationLiftMin + offset);
+    } else {
+        silenceDuration = 0;
+    }
+}
+
+static void startBeep(void) {
+    calculateBeepDuration();
+    chSysLock();
+    gptStartOneShotI(&GPTD3, MS2TIMTICK(beepDuration));
+    enableBeepI();
+    chSysUnlock();
+}
+
+static void timerCallback(GPTDriver *gptp) {
+
+    (void)gptp;
+
+    if(BEEP_DISABLED == beepControlState) {
+        chSysLockFromISR();
+        disableBeepI();
+        chSysUnlockFromISR();
+        return;
+    }
+
+    calculateSilenceDuration();
+    calculateBeepDuration();
+
+    switch(beepState) {
+    case BEEP_ON:
+        if(BEEP_SINKING == beepControlState) {
+            beepState = BEEP_ON;
+            gptStartOneShotI(&GPTD3, MS2TIMTICK(beepDuration));
+            chSysUnlockFromISR();
+        } else {
+            beepState = BEEP_OFF;
+            chSysLockFromISR();
+            disableBeepI();
+            gptStartOneShotI(&GPTD3, MS2TIMTICK(silenceDuration));
+            chSysUnlockFromISR();
+        }
+        break;
+    case BEEP_OFF:
+        beepState = BEEP_ON;
+        chSysLockFromISR();
+        enableBeepI();
+        gptStartOneShotI(&GPTD3, MS2TIMTICK(beepDuration));
+        chSysUnlockFromISR();
+        break;
+    default:
+        break;
+    }
+}
+
+static void updateBeeperStateMachine(void) {
+    switch(beepControlState) {
+    case BEEP_LIFTING:
+        if (actualVario < liftOffThreshold) {
+            beepControlState = BEEP_DISABLED;
+        }
+        break;
+    case BEEP_SINKING:
+        if (sinkOffThreshold < actualVario)
+            beepControlState = BEEP_DISABLED;
+        break;
+    case BEEP_DISABLED:
+        if (liftThreshold < actualVario)
+            beepControlState = BEEP_LIFTING;
+        if (actualVario < sinkThreshold)
+            beepControlState = BEEP_SINKING;
+
+        if(BEEP_DISABLED != beepControlState)
+            startBeep();
+
+        break;
+    default:
+        break;
+    }
+}
+
+static void stepVolume(void) {
+    switch(beepVolume) {
+    case VOLUME_ZERO:
+        beepVolume = VOLUME_LOW;
+        break;
+    case VOLUME_LOW:
+        beepVolume = VOLUME_MED;
+        break;
+    case VOLUME_MED:
+        beepVolume = VOLUME_HIGH;
+        break;
+    case VOLUME_HIGH:
+        beepVolume = VOLUME_ZERO;
+        break;
+    default:
+        beepVolume = VOLUME_HIGH;
+        break;
+    }
+}
+
+static void playStartupSignal(void) {
     size_t i;
     for (i = 0; i < 2; i++) {
-        set_pwm(0, VOLUME_HIGH);
+        setPwmFreqAndDutyCycle(2000, VOLUME_HIGH);
         chThdSleepMilliseconds(50);
 
-        set_pwm(2000, VOLUME_HIGH);
+        setPwmFreqAndDutyCycle(0, VOLUME_ZERO);
         chThdSleepMilliseconds(50);
     }
 }
 
-static void play_shutdown_signal(void)
-{
+static void playShutdownSignal(void) {
     size_t i;
+
+    chThdSleepMicroseconds(500);
+
     for (i = 0; i < 5; i++) {
-        set_pwm(0, VOLUME_HIGH);
+        setPwmFreqAndDutyCycle(2000, VOLUME_HIGH);
         chThdSleepMilliseconds(50);
 
-        set_pwm(2000, VOLUME_HIGH);
+        setPwmFreqAndDutyCycle(0, VOLUME_ZERO);
         chThdSleepMilliseconds(50);
+    }
+}
+
+static void playVolumeSetSignal(void) {
+    setPwmFreqAndDutyCycle(0, beepVolume);
+    chThdSleepMilliseconds(50);
+
+    setPwmFreqAndDutyCycle(2000, beepVolume);
+    chThdSleepMilliseconds(200);
+
+    setPwmFreqAndDutyCycle(0, beepVolume);
+    chThdSleepMilliseconds(50);
+}
+
+static void updateBeepFrequency(void) {
+    if ((BEEP_ON == beepState) && (BEEP_DISABLED != beepControlState)) {
+        chSysLock();
+        setPwmFreqAndDutyCycleI(beepFrequency, beepVolume);
+        chSysUnlock();
     }
 }
 
@@ -113,43 +337,57 @@ THD_FUNCTION(BeepControlThread, arg)
 {
     (void)arg;
 
-    play_startup_signal();
+    chEvtObjectInit(&beeperEvent);
 
-    chEvtObjectInit(&beeper_event_source);
+    pwmStart(&PWMD4, &pwmcfg);
+    pwmEnableChannel(&PWMD4, 0, VOLUME_ZERO);
 
-    event_listener_t beeper_listener;
+    event_listener_t beeperListener;
     chEvtRegisterMaskWithFlags(
-            &beeper_event_source,
-            &beeper_listener,
+            &beeperEvent,
+            &beeperListener,
             EVENT_MASK(0),
-            START_BEEPER     |
-            STOP_BEEPER      |
-            STEP_VOLUME |
+            STEP_VOLUME  |
             SYSTEM_SHUTDOWN);
 
+    event_listener_t signalProcessorListener;
+    chEvtRegisterMaskWithFlags(
+            &signalProcessorEvent,
+            &signalProcessorListener,
+            EVENT_MASK(1),
+            CALCULATION_FINISHED);
+
+    gptStart(&GPTD3, &beepTimerConfig);
+
     while (1) {
-        eventmask_t evt = chEvtWaitAny(EVENT_MASK(0));
+        eventmask_t event = chEvtWaitAny(ALL_EVENTS);
 
-        if (evt & EVENT_MASK(0)) {
-            eventflags_t flags = chEvtGetAndClearFlags(&beeper_listener);
-
-            if (flags & START_BEEPER) {
-                chThdSleepMilliseconds(100);
-            }
-            if (flags & STOP_BEEPER) {
-                chThdSleepMilliseconds(100);
-            }
+        if (event & EVENT_MASK(0)) {
+            eventflags_t flags = chEvtGetAndClearFlags(&beeperListener);
             if (flags & STEP_VOLUME) {
-                step_volume();
+                stepVolume();
             }
             if (flags & SYSTEM_SHUTDOWN) {
-                play_shutdown_signal();
+                chSysLock();
+                disableBeepI();
+                gptStopTimerI(&GPTD3);
+                chSysUnlock();
+                playShutdownSignal();
                 palClearPad(GPIOA, GPIOA_SHUTDOWN);
+            }
+        }
+        if (event & EVENT_MASK(1)) {
+            eventflags_t flags = chEvtGetAndClearFlags(&signalProcessorListener);
+
+            if (flags & CALCULATION_FINISHED) {
+                readMeasurementData();
+                calculateBeepFrequency();
+                updateBeeperStateMachine();
+                updateBeepFrequency();
             }
         }
     }
 }
-
 
 /******************************* END OF FILE ***********************************/
 

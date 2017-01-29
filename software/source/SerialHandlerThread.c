@@ -28,7 +28,7 @@
 /*******************************************************************************/
 /* DEFINITION OF GLOBAL CONSTANTS AND VARIABLES                                */
 /*******************************************************************************/
-EVENTSOURCE_DECL(serial_event_source);
+EVENTSOURCE_DECL(serialEvent);
 
 /*******************************************************************************/
 /* DEFINITION OF LOCAL FUNCTIONS                                               */
@@ -42,25 +42,25 @@ THD_FUNCTION(SerialHandlerThread, arg)
     (void)arg;
 
     /* Start serial interface to Kobo.*/
-    static SerialConfig kobocfg = {9600,0,0,0};
-    sdStart(&SD1, &kobocfg);
+    static SerialConfig koboConfig = {9600,0,0,0};
+    sdStart(&SD1, &koboConfig);
 
     /* Start serial interface to GPS module.*/
-    static SerialConfig gpscfg  = {9600,0,0,0};
-    sdStart(&SD2, &gpscfg);
+    static SerialConfig gpsConfig  = {9600,0,0,0};
+    sdStart(&SD2, &gpsConfig);
 
-    event_listener_t gps_listener;
+    event_listener_t gpsListener;
     eventflags_t flags;
     chEvtRegisterMaskWithFlags(
             (event_source_t *)chnGetEventSource(&SD2),
-            &gps_listener,
+            &gpsListener,
             EVENT_MASK(0),
             CHN_INPUT_AVAILABLE);
 
-    event_listener_t serial_listener;
+    event_listener_t serialListener;
     chEvtRegisterMaskWithFlags(
-            &serial_event_source,
-            &serial_listener,
+            &serialEvent,
+            &serialListener,
             EVENT_MASK(1),
             LK8EX1_READY_TO_SEND);
 
@@ -68,7 +68,7 @@ THD_FUNCTION(SerialHandlerThread, arg)
         eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
 
         if (evt & EVENT_MASK(0)) {
-            flags = chEvtGetAndClearFlags(&gps_listener);
+            flags = chEvtGetAndClearFlags(&gpsListener);
             if (flags & CHN_INPUT_AVAILABLE)
             {
                 msg_t c;
@@ -82,7 +82,7 @@ THD_FUNCTION(SerialHandlerThread, arg)
             }
         }
         if (evt & EVENT_MASK(1)) {
-            flags = chEvtGetAndClearFlags(&gps_listener);
+            flags = chEvtGetAndClearFlags(&gpsListener);
             if (flags & LK8EX1_READY_TO_SEND) {
 #if 0
                 chprintf((BaseSequentialStream*)&SD1, "\n\rLK8EX1 ready\n\r");

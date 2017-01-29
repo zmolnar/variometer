@@ -7,3 +7,6 @@
 *.list
 *.map
 *.lst
+software/.cproject
+software/.project
+software/.settings

@@ -1,8 +1,7 @@
-/* thrBeepControl.h --- 
- * 
+/*
  * @file thrBeepControl.h
  * @brief Beep controller thread.
- * @author Zoltán, Molnár
+ * @author Molnár Zoltán
  */
 
 #ifndef BEEPCONTROLTHREAD_H
@@ -17,26 +16,23 @@
 /* DEFINED CONSTANTS                                                           */
 /*******************************************************************************/
 
-
 /*******************************************************************************/
 /* MACRO DEFINITIONS                                                           */
 /*******************************************************************************/
-
 
 /*******************************************************************************/
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
 typedef enum {
-        START_BEEPER    = (1 << 1),
-        STOP_BEEPER     = (1 << 2),
-        STEP_VOLUME     = (1 << 3),
-        SYSTEM_SHUTDOWN = (1 << 4)
+        START_BEEP            = (1 << 0),
+        STEP_VOLUME           = (1 << 1),
+        SYSTEM_SHUTDOWN       = (1 << 2)
 } BeeperEvent_t;
 
 /*******************************************************************************/
 /* DECLARATIONS OF GLOBAL VARIABLES                                           */
 /*******************************************************************************/
-extern event_source_t beeper_event_source;
+extern event_source_t beeperEvent;
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL FUNCTIONS                                             */

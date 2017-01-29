@@ -1,7 +1,7 @@
 /**
  * @file SignalProcessorThread.c
  * @brief Thread to perform processing of raw pressure data.
- * @author Zoltán, Molnár
+ * @author Molnár Zoltán
  */
 
 /*******************************************************************************/
@@ -33,9 +33,10 @@
 /*******************************************************************************/
 /* DEFINITION OF GLOBAL CONSTANTS AND VARIABLES                                */
 /*******************************************************************************/
-MUTEX_DECL(dsp_mutex);
-float dsp_vario = 0;
-float dsp_pfil = 0;
+MUTEX_DECL(SignalProcessorMutex);
+EVENTSOURCE_DECL(signalProcessorEvent);
+
+struct SignalProcessingOutputData_s SignalProcessingOutputData;
 
 /*******************************************************************************/
 /* DECLARATION OF LOCAL FUNCTIONS                                              */
@@ -44,17 +45,39 @@ float dsp_pfil = 0;
 /*******************************************************************************/
 /* DEFINITION OF LOCAL FUNCTIONS                                               */
 /*******************************************************************************/
-static float ab_filter(float a, float b,
-        float *xk_1, float *vk_1,
-        int32_t x, float dt)
-{
-    float xk = *xk_1 + (*vk_1 * dt);
+static void waitForMeasurementData(struct PressureData_s *pdata) {
+    thread_t *psender = chMsgWait();
+    msg_t msg = chMsgGet(psender);
+    *pdata = *(struct PressureData_s *)msg;
+    chMsgRelease(psender, 0);
+}
+
+static systime_t calculateElapsedTimeInMs(systime_t t1, systime_t t2) {
+    systime_t dt = t2 - t1;
+    if (t2 < t1)
+        dt += (systime_t)(-1);
+
+    return ST2MS(dt);
+}
+
+static float convertPressureToAltitude(float pressure) {
+    return 44330 * (1 - pow ((pressure / 101325.0), 0.1902));
+}
+
+static float ab_filter(
+        float alpha,
+        float beta,
+        float *xk_1,
+        float *vk_1,
+        int32_t x_raw,
+        float samplingTime) {
+    float xk = *xk_1 + (*vk_1 * samplingTime);
     float vk = *vk_1;
 
-    float rk = x - xk;
+    float rk = x_raw - xk;
 
-    xk += a * rk;
-    vk += b * rk / dt;
+    xk += alpha * rk;
+    vk += beta * rk / samplingTime;
 
     *xk_1 = xk;
     *vk_1 = vk;
@@ -62,35 +85,38 @@ static float ab_filter(float a, float b,
     return xk;
 }
 
-static float calc_slope(float *buf, size_t blength,
-        size_t start, size_t dlength, float dt)
-{
+static float calc_slope(
+        float *buffer,
+        size_t bufferLength,
+        size_t startIndex,
+        size_t sampleCount,
+        float dt) {
     float x_avg = 0;
     float y_avg = 0;
     size_t i;
-    for (i = 0; i < dlength; i++) {
+    for (i = 0; i < sampleCount; i++) {
         size_t j;
-        if (start + i < blength)
-            j = start + i;
+        if (startIndex + i < bufferLength)
+            j = startIndex + i;
         else
-            j = i - blength + start;
+            j = i - bufferLength + startIndex;
 
         x_avg += i * dt;
-        y_avg += buf[j];
+        y_avg += buffer[j];
     }
 
-    x_avg /= dlength;
-    y_avg /= dlength;
+    x_avg /= sampleCount;
+    y_avg /= sampleCount;
 
     float num = 0;
     float den = 0;
-    for (i = 0; i < dlength; i++) {
+    for (i = 0; i < sampleCount; i++) {
         size_t j;
-        if (start + i < blength)
-            j = start + i;
+        if (startIndex + i < bufferLength)
+            j = startIndex + i;
         else
-            j = i - blength + start;
-        num += (i*dt - x_avg) * (buf[j] - y_avg);
+            j = i - bufferLength + startIndex;
+        num += (i*dt - x_avg) * (buffer[j] - y_avg);
         den += (i*dt - x_avg) * (i*dt - x_avg);
     }
 
@@ -104,52 +130,61 @@ THD_FUNCTION(SignalProcessorThread, arg)
 {
     (void)arg;
 
-    float pi_1;
-    float vi_1;
-    systime_t ti_1;
-    float hbuf[BUFLENGTH] = {0};
-    size_t dlength = 0;
-    size_t i = 0;
-
-    // Wait for initial data.
-    thread_t *psender = chMsgWait();
-    msg_t msg = chMsgGet(psender);
-    struct PressureData_s data = *(struct PressureData_s *)msg;
-    chMsgRelease(psender, 0);
-
-    pi_1 = (float)data.p_raw;
-    ti_1 = data.t;
-    vi_1 = 0;
+    chEvtObjectInit(&signalProcessorEvent);
 
     while (1) {
-        psender = chMsgWait();
-        msg = chMsgGet(psender);
-        data = *(struct PressureData_s *)msg;
-        chMsgRelease(psender, 0);
+        static float lastPressure = 0;
+        static float lastPressureChangingSpeed = 0;
+        static systime_t lastTimestamp = 0;
+        static float altitudeBuffer[BUFLENGTH] = {0};
+        static size_t sampleCount = 0;
+        static size_t sampleIndex = 0;
 
-        systime_t dt = data.t - ti_1;
-        if (data.t < ti_1)
-            dt += (systime_t)(-1);
+        struct PressureData_s rawData;
+        waitForMeasurementData(&rawData);
 
-        float p_raw = data.p_raw;
-        float p = ab_filter(ALPHA, BETA, &pi_1, &vi_1, p_raw, ST2MS(dt));
-        float h = 44330 * (1 - pow ((p / 101325.0), 0.1902));
-        hbuf[i++ % BUFLENGTH] = h;
-
-        if (dlength < BUFLENGTH) {
-            dlength++;
+        if (0 == sampleCount) {
+            lastPressure = rawData.pressure;
+            lastTimestamp = rawData.timestamp;
+            lastPressureChangingSpeed = 0;
             continue;
         }
 
-        float v = calc_slope(hbuf, BUFLENGTH, i % BUFLENGTH, dlength,
-                ST2MS(dt) / 1000.0);
+        float rawPressure = rawData.pressure;
+        systime_t actualTimestamp = rawData.timestamp;
+        systime_t samplingTime = calculateElapsedTimeInMs(lastTimestamp, actualTimestamp);
 
-        ti_1 = data.t;
+        float filteredPressure = ab_filter(
+                ALPHA,
+                BETA,
+                &lastPressure,
+                &lastPressureChangingSpeed,
+                rawPressure,
+                samplingTime);
 
-        chMtxLock(&dsp_mutex);
-        dsp_vario = v;
-        dsp_pfil  = p;
-        chMtxUnlock(&dsp_mutex);
+        float altitude = convertPressureToAltitude(filteredPressure);
+
+        altitudeBuffer[sampleIndex++ % BUFLENGTH] = altitude;
+
+        if (sampleCount < BUFLENGTH) {
+            sampleCount++;
+            continue;
+        }
+
+        float vario = calc_slope(
+                altitudeBuffer,
+                BUFLENGTH,
+                sampleIndex % BUFLENGTH,
+                sampleCount,
+                samplingTime / 1000.0);
+
+        lastTimestamp = rawData.timestamp;
+
+        chMtxLock(&SignalProcessorMutex);
+        SignalProcessingOutputData.vario = vario;
+        SignalProcessingOutputData.baroAltitude = 0;
+        SignalProcessingOutputData.filteredPressure = filteredPressure;
+        chMtxUnlock(&SignalProcessorMutex);
     }
 }
 

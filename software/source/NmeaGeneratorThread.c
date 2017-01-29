@@ -77,11 +77,11 @@ THD_FUNCTION(NmeaGeneratorThread, arg)
     while(1) {
         chSemWait(&nmea_sem);
         chVTSet(&vt, S2ST(1), vtcb, NULL);
-
-        chMtxLock(&dsp_mutex);
+#if 0
+        chMtxLock(&SignalProcessorMutex);
         float v = dsp_vario;
         float p = dsp_pfil;
-        chMtxUnlock(&dsp_mutex);
+        chMtxUnlock(&SignalProcessorMutex);
 
         struct Lk8ex1_s data;
         data.p_raw = (int32_t)(p*100);
@@ -89,7 +89,7 @@ THD_FUNCTION(NmeaGeneratorThread, arg)
         data.vario = (int32_t)(v*100);
         data.temp = 99;
         data.battery_voltage = 999;
-#if 1
+
         chsnprintf (nmea, sizeof(nmea),
                 "$LK8EX1,%d,%d,%d,%d,%d\r\n",
                 data.p_raw,
@@ -104,7 +104,7 @@ THD_FUNCTION(NmeaGeneratorThread, arg)
                 sizeof(nmea) - strlen(nmea),
                 "*%x\r\n", crc);
 
-        chEvtBroadcastFlags(&serial_event_source, LK8EX1_READY_TO_SEND);
+        chEvtBroadcastFlags(&serialEvent, LK8EX1_READY_TO_SEND);
         chSemWait(&nmea_message_sent);
 #endif
     }

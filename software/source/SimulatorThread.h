@@ -1,11 +1,11 @@
 /**
- * @file PressureReaderThread.h
- * @brief Thread that periodically reads measurement data from MS5611 sensor. 
- * @author Zoltán Molnár
- */
+ * @file SimulatorThread.h
+ * @brief Thread to simulate processed data.
+ * @author Molnár Zoltán
+*/
 
-#ifndef PRESSUREREADERTHREAD_H
-#define PRESSUREREADERTHREAD_H
+#ifndef SIMULATORTHREAD_H
+#define SIMULATORTHREAD_H
 
 /*******************************************************************************/
 /* INCLUDES                                                                    */
@@ -23,11 +23,6 @@
 /*******************************************************************************/
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
-struct PressureData_s {
-    systime_t timestamp;
-    uint32_t pressure;
-    int32_t temperature;
-};
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL VARIABLES                                             */
@@ -36,7 +31,7 @@ struct PressureData_s {
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL FUNCTIONS                                             */
 /*******************************************************************************/
-THD_FUNCTION(PressureReaderThread, arg);
+THD_FUNCTION(SimulatorThread, arg);
 
 #endif
 
