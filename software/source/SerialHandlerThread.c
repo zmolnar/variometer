@@ -7,6 +7,7 @@
 /*******************************************************************************/
 /* INCLUDES                                                                    */
 /*******************************************************************************/
+#include "NmeaGeneratorThread.h"
 #include "SerialHandlerThread.h"
 #include "hal.h"
 #include "chprintf.h"
@@ -26,7 +27,6 @@
 /*******************************************************************************/
 /* DEFINITION OF GLOBAL CONSTANTS AND VARIABLES                                */
 /*******************************************************************************/
-EVENTSOURCE_DECL(serialEvent);
 
 /*******************************************************************************/
 /* DEFINITION OF LOCAL FUNCTIONS                                               */
@@ -49,29 +49,24 @@ THD_FUNCTION(SerialHandlerThread, arg)
 
     event_listener_t gpsListener;
     eventflags_t flags;
+
     chEvtRegisterMaskWithFlags(
             (event_source_t *)chnGetEventSource(&SD2),
             &gpsListener,
             EVENT_MASK(0),
             CHN_INPUT_AVAILABLE);
 
-    event_listener_t serialListener;
-    chEvtRegisterMaskWithFlags(
-            &serialEvent,
-            &serialListener,
-            EVENT_MASK(1),
-            LK8EX1_READY_TO_SEND);
+    event_listener_t nmeaListener;
+    chEvtRegisterMask(&nmeaMessageReady, &nmeaListener, EVENT_MASK(1));
 
     while (1) {
         eventmask_t evt = chEvtWaitAny(ALL_EVENTS);
 
         if (evt & EVENT_MASK(0)) {
             flags = chEvtGetAndClearFlags(&gpsListener);
-            if (flags & CHN_INPUT_AVAILABLE)
-            {
+            if (flags & CHN_INPUT_AVAILABLE) {
                 msg_t c;
-                do
-                {
+                do {
                     c = chnGetTimeout(&SD2, TIME_IMMEDIATE);
                     if ( c != STM_TIMEOUT )
                         chprintf((BaseSequentialStream*)&SD1, "%c", (char)c);
@@ -80,12 +75,8 @@ THD_FUNCTION(SerialHandlerThread, arg)
             }
         }
         if (evt & EVENT_MASK(1)) {
-            flags = chEvtGetAndClearFlags(&gpsListener);
-            if (flags & LK8EX1_READY_TO_SEND) {
-#if 0
-                chprintf((BaseSequentialStream*)&SD1, "\n\rLK8EX1 ready\n\r");
-#endif
-            }
+            chprintf((BaseSequentialStream*)&SD1, "%s\n\r", nmea);
+            chSemSignal(&nmeaMessageSent);
         }
     }
 }

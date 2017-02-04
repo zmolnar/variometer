@@ -114,7 +114,9 @@ CSRC = $(STARTUPSRC) \
        $(PLATFORMSRC) \
        $(BOARDSRC) \
        $(TESTSRC) \
-       $(CHIBIOS)/os/hal/lib/streams/chprintf.c  
+       $(CHIBIOS)/os/hal/lib/streams/chprintf.c \
+       $(CHIBIOS)/os/hal/lib/streams/memstreams.c \
+       $(CHIBIOS)/os/hal/lib/streams/nullstreams.c    
 CSRC += $(wildcard source/*.c)
 
 # C++ sources that can be compiled in ARM or THUMB mode depending on the global

@@ -29,7 +29,7 @@
 /*******************************************************************************/
 /* DEFINITION OF GLOBAL CONSTANTS AND VARIABLES                                */
 /*******************************************************************************/
-static SEMAPHORE_DECL(sem_button, 0);
+static SEMAPHORE_DECL(buttonSemaphore, 0);
 static virtual_timer_t vt;
 static systime_t start, end;
 
@@ -58,7 +58,7 @@ static void buttonInterruptCallback(EXTDriver *extp, expchannel_t channel)
         chSysLockFromISR();
         chVTResetI(&vt);
         chSysUnlockFromISR();
-        chSemSignal(&sem_button);
+        chSemSignal(&buttonSemaphore);
     }
 }
 
@@ -96,19 +96,20 @@ THD_FUNCTION(ButtonHandlerThread, arg)
 
     chThdSleepMilliseconds(2000);
 
-    chSemObjectInit(&sem_button, 0);
+    chSemObjectInit(&buttonSemaphore, 0);
     extStart(&EXTD1, &extcfg);
     extChannelEnable(&EXTD1, 8);
 
     while(1) {
-        chSemWait(&sem_button);
+        chSemWait(&buttonSemaphore);
         systime_t dt = end - start;
         if (end < start)
             dt += (systime_t)(-1);
 
-        uint32_t t = ST2MS(dt);
+        uint32_t pressDuration = ST2MS(dt);
 
-        if ((STEP_VOLUME_MIN <= t) && (t < STEP_VOLUME_MAX)) {
+        if ((STEP_VOLUME_MIN <= pressDuration) &&
+                (pressDuration < STEP_VOLUME_MAX)) {
             chEvtBroadcastFlags(&beeperEvent, STEP_VOLUME);
         }
     }

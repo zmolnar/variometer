@@ -22,14 +22,15 @@
 #include "SimulatorThread.h"
 #include "SerialHandlerThread.h"
 #include "ButtonHandlerThread.h"
+#include "NmeaGeneratorThread.h"
 
-#define SIMULATED_DATA
+#undef USE_SIMULATED_DATA
 
 /*
  * Thread working area definitions.
  */
-static THD_WORKING_AREA(waBeepControl, 2048);
-#ifndef SIMULATED_DATA
+static THD_WORKING_AREA(waBeepControl, 1024);
+#ifndef USE_SIMULATED_DATA
 static THD_WORKING_AREA(waPressureReader, 128);
 static THD_WORKING_AREA(waSignalProcessor, 2048);
 #else
@@ -37,12 +38,13 @@ static THD_WORKING_AREA(waSimulator, 128);
 #endif
 static THD_WORKING_AREA(waSerialHandler, 128);
 static THD_WORKING_AREA(waButtonHandler, 1024);
+static THD_WORKING_AREA(waNmeaGenerator, 1024);
 
 /*
  * Thread references.
  */
 thread_t *pBeepControlThread;
-#ifndef SIMULATED_DATA
+#ifndef USE_SIMULATED_DATA
 thread_t *pPressureReaderThread;
 thread_t *pSignalProcessorThread;
 #else
@@ -50,6 +52,7 @@ thread_t *pSimulatorThread;
 #endif
 thread_t *pSerialHandlerThread;
 thread_t *pButtonHandlerThread;
+thread_t *pNmeaGeneratorThread;
 
 /*
  * Application entry point.
@@ -77,7 +80,7 @@ int main(void) {
     /*
      * Create threads.
      */
-#ifndef SIMULATED_DATA
+#ifndef USE_SIMULATED_DATA
     pPressureReaderThread = chThdCreateStatic (
             waPressureReader,
             sizeof(waPressureReader),
@@ -113,6 +116,14 @@ int main(void) {
             sizeof (waBeepControl),
             NORMALPRIO + 2,
             BeepControlThread,
+            NULL);
+#endif
+#if 1
+    pNmeaGeneratorThread = chThdCreateStatic (
+            waNmeaGenerator,
+            sizeof(waNmeaGenerator),
+            NORMALPRIO + 3,
+            NmeaGeneratorThread,
             NULL);
 #endif
 #if 1

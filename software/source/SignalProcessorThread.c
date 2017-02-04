@@ -147,6 +147,7 @@ THD_FUNCTION(SignalProcessorThread, arg)
             lastPressure = rawData.pressure;
             lastTimestamp = rawData.timestamp;
             lastPressureChangingSpeed = 0;
+            sampleCount++;
             continue;
         }
 
@@ -182,9 +183,11 @@ THD_FUNCTION(SignalProcessorThread, arg)
 
         chMtxLock(&SignalProcessorMutex);
         SignalProcessingOutputData.vario = vario;
-        SignalProcessingOutputData.baroAltitude = 0;
+        SignalProcessingOutputData.baroAltitude = altitude;
         SignalProcessingOutputData.filteredPressure = filteredPressure;
         chMtxUnlock(&SignalProcessorMutex);
+
+        chEvtBroadcastFlags(&signalProcessorEvent, CALCULATION_FINISHED);
     }
 }
 

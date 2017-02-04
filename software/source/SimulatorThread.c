@@ -67,7 +67,6 @@ THD_FUNCTION(SimulatorThread, arg)
             chThdSleepMilliseconds(20);
         }
 #endif
-        vario = 0;
     }
 }
 

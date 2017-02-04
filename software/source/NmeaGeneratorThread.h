@@ -28,7 +28,8 @@
 /* DECLARATION OF GLOBAL VARIABLES                                             */
 /*******************************************************************************/
 extern char nmea[];
-extern semaphore_t nmea_message_sent;
+extern semaphore_t nmeaMessageSent;
+extern event_source_t nmeaMessageReady;
 
 /*******************************************************************************/
 /* DECLARATION OF GLOBAL FUNCTIONS                                             */

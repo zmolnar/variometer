@@ -20,12 +20,9 @@
 /*******************************************************************************/
 /* TYPE DEFINITIONS                                                            */
 /*******************************************************************************/
-struct Lk8ex1_s {
-    int32_t p_raw;
-    int32_t altitude;
-    int32_t vario;
-    int32_t temp;
-    int32_t battery_voltage;
+struct NmeaData_s {
+    float baroAltitude;
+    float vario;
 };
 
 /*******************************************************************************/
@@ -35,11 +32,12 @@ struct Lk8ex1_s {
 /*******************************************************************************/
 /* DEFINITION OF GLOBAL CONSTANTS AND VARIABLES                                */
 /*******************************************************************************/
-SEMAPHORE_DECL(nmea_message_sent, 0);
-char nmea[150] = {0};
+SEMAPHORE_DECL(nmeaMessageSent, 0);
+char nmea[150];
 
-static SEMAPHORE_DECL(nmea_sem, 0);
-static virtual_timer_t vt;
+EVENTSOURCE_DECL(nmeaMessageReady);
+
+static struct NmeaData_s nmeaData;
 
 /*******************************************************************************/
 /* DECLARATION OF LOCAL FUNCTIONS                                              */
@@ -48,21 +46,35 @@ static virtual_timer_t vt;
 /*******************************************************************************/
 /* DEFINITION OF LOCAL FUNCTIONS                                               */
 /*******************************************************************************/
-static void vtcb(void *arg)
-{
-    (void)arg;
-    chSemSignal(&nmea_sem);
-}
-
-static uint32_t calc_nmea_crc(const char *p, size_t length)
+static uint32_t calculateCrc(const char *pdata, size_t length)
 {
     uint32_t crc = 0;
-
     size_t i;
     for (i = 0; i < length; i++)
-        crc ^=p[i];
+        crc ^= pdata[i];
 
     return crc;
+}
+
+static void readMeasurementData(void) {
+    chMtxLock(&SignalProcessorMutex);
+    nmeaData.baroAltitude = SignalProcessingOutputData.baroAltitude;
+    nmeaData.vario = SignalProcessingOutputData.vario;
+    chMtxUnlock(&SignalProcessorMutex);
+}
+
+static void createNmeaMessage(void) {
+    memset(nmea, 0, sizeof(nmea));
+    chsnprintf(nmea, sizeof(nmea), "$LXWP0,N,,%.2f,%.2f,,,,,,,,",
+            nmeaData.baroAltitude, nmeaData.vario);
+    uint32_t crc = calculateCrc(nmea+1, strlen(nmea)-1);
+    chsnprintf(nmea + strlen(nmea), sizeof(nmea) - strlen(nmea), "*%02X", crc);
+
+    nmea[strlen(nmea)] = '\0';
+}
+
+static void sendMessage(void) {
+    chEvtBroadcast(&nmeaMessageReady);
 }
 
 /*******************************************************************************/
@@ -72,41 +84,14 @@ THD_FUNCTION(NmeaGeneratorThread, arg)
 {
     (void)arg;
 
-    chSemObjectInit(&nmea_sem, 0);
+    chSemObjectInit(&nmeaMessageSent, 0);
 
     while(1) {
-        chSemWait(&nmea_sem);
-        chVTSet(&vt, S2ST(1), vtcb, NULL);
-#if 0
-        chMtxLock(&SignalProcessorMutex);
-        float v = dsp_vario;
-        float p = dsp_pfil;
-        chMtxUnlock(&SignalProcessorMutex);
-
-        struct Lk8ex1_s data;
-        data.p_raw = (int32_t)(p*100);
-        data.altitude = 999999;
-        data.vario = (int32_t)(v*100);
-        data.temp = 99;
-        data.battery_voltage = 999;
-
-        chsnprintf (nmea, sizeof(nmea),
-                "$LK8EX1,%d,%d,%d,%d,%d\r\n",
-                data.p_raw,
-                data.altitude,
-                data.vario,
-                data.temp,
-                data.battery_voltage);
-
-        uint32_t crc = calc_nmea_crc(nmea+1, strlen(nmea)-1);
-        chsnprintf (
-                nmea + strlen(nmea),
-                sizeof(nmea) - strlen(nmea),
-                "*%x\r\n", crc);
-
-        chEvtBroadcastFlags(&serialEvent, LK8EX1_READY_TO_SEND);
-        chSemWait(&nmea_message_sent);
-#endif
+        chThdSleepMilliseconds(1000);
+        readMeasurementData();
+        createNmeaMessage();
+        sendMessage();
+        chSemWait(&nmeaMessageSent);
     }
 }
 
