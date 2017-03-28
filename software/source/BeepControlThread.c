@@ -216,6 +216,7 @@ static void timerCallback(GPTDriver *gptp) {
     switch(beepState) {
     case BEEP_ON:
         if(0 == silenceDuration) {
+            chSysLockFromISR();
             gptStartOneShotI(BEEP_TIMER, MS2TIMTICK(beepDuration));
             chSysUnlockFromISR();
         } else {
@@ -329,6 +330,36 @@ static void updateBeepFrequency(void) {
     }
 }
 
+static void handleStepVolumeEvent(void)
+{
+    chSysLock();
+    gptStopTimerI(BEEP_TIMER);
+    disableBeepI();
+    beepControlState = BEEP_DISABLED;
+    chSysUnlock();
+    stepVolume();
+    playVolumeSetSignal();
+}
+
+static void handleSystemShutdownEvent(void)
+{
+    chSysLock();
+    gptStopTimerI(BEEP_TIMER);
+    disableBeepI();
+    beepControlState = BEEP_DISABLED;
+    chSysUnlock();
+    playShutdownSignal();
+    palClearPad(GPIOA, GPIOA_SHUTDOWN);
+}
+
+static void handleSignalProcessorEvent(void)
+{
+    readMeasurementData();
+    calculateBeepFrequency();
+    updateBeeperStateMachine();
+    updateBeepFrequency();
+}
+
 /*******************************************************************************/
 /* DEFINITION OF GLOBAL FUNCTIONS                                              */
 /*******************************************************************************/
@@ -363,34 +394,17 @@ THD_FUNCTION(BeepControlThread, arg)
 
         if (event & EVENT_MASK(0)) {
             eventflags_t flags = chEvtGetAndClearFlags(&beeperListener);
-            if (flags & STEP_VOLUME) {
-                chSysLock();
-                gptStopTimerI(BEEP_TIMER);
-                disableBeepI();
-                beepControlState = BEEP_DISABLED;
-                chSysUnlock();
-                stepVolume();
-                playVolumeSetSignal();
-            }
-            if (flags & SYSTEM_SHUTDOWN) {
-                chSysLock();
-                gptStopTimerI(BEEP_TIMER);
-                disableBeepI();
-                beepControlState = BEEP_DISABLED;
-                chSysUnlock();
-                playShutdownSignal();
-                palClearPad(GPIOA, GPIOA_SHUTDOWN);
-            }
+            if (flags & STEP_VOLUME)
+                handleStepVolumeEvent();
+
+            if (flags & SYSTEM_SHUTDOWN)
+                handleSystemShutdownEvent();
         }
         if (event & EVENT_MASK(1)) {
             eventflags_t flags = chEvtGetAndClearFlags(&signalProcessorListener);
 
-            if (flags & CALCULATION_FINISHED) {
-                readMeasurementData();
-                calculateBeepFrequency();
-                updateBeeperStateMachine();
-                updateBeepFrequency();
-            }
+            if (flags & CALCULATION_FINISHED)
+                handleSignalProcessorEvent();
         }
     }
 }

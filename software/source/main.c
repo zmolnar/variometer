@@ -54,6 +54,14 @@ thread_t *pSerialHandlerThread;
 thread_t *pButtonHandlerThread;
 thread_t *pNmeaGeneratorThread;
 
+/**
+ * Watchdog configuration.
+ */
+static const WDGConfig watchDogConfig = {
+    (STM32_IWDG_PR_MASK & STM32_IWDG_PR_8),
+    0x0fff
+};
+
 /*
  * Application entry point.
  */
@@ -135,13 +143,17 @@ int main(void) {
             NULL);
 #endif
 
+    wdgStart(&WDGD1, &watchDogConfig);
+
     /*
      * Blink heartbeat LED.
      */
     while (true) {
         palClearPad(GPIOB, GPIOB_LED);
         chThdSleepMilliseconds(500);
+        wdgReset(&WDGD1);
         palSetPad(GPIOB, GPIOB_LED);
         chThdSleepMilliseconds(500);
+        wdgReset(&WDGD1);
     }
 }
