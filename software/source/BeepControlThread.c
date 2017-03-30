@@ -46,6 +46,11 @@ typedef enum {
     BEEP_OFF
 } BeepState_t;
 
+typedef enum {
+    TIMER_STOPPED,
+    TIMER_RUNNING
+} TimerState_t;
+
 /*******************************************************************************/
 /* DEFINITIONS OF GLOBAL CONSTANTS AND VARIABLES                               */
 /*******************************************************************************/
@@ -97,6 +102,7 @@ static float silenceDurationMaxLift = 60;
 static BeepControlState_t beepControlState = BEEP_DISABLED;
 static BeepState_t beepState = BEEP_OFF;
 static BeepVolume_t beepVolume = VOLUME_MED;
+static TimerState_t timerState = TIMER_STOPPED;
 
 static uint32_t beepFrequency;
 static uint32_t beepDuration;
@@ -195,6 +201,7 @@ static void startBeep(void) {
     calculateBeepDuration();
     chSysLock();
     gptStartOneShotI(BEEP_TIMER, MS2TIMTICK(beepDuration));
+    timerState = TIMER_RUNNING;
     enableBeepI();
     chSysUnlock();
 }
@@ -206,6 +213,7 @@ static void timerCallback(GPTDriver *gptp) {
     if(BEEP_DISABLED == beepControlState) {
         chSysLockFromISR();
         disableBeepI();
+        timerState = TIMER_STOPPED;
         chSysUnlockFromISR();
         return;
     }
@@ -254,7 +262,7 @@ static void updateBeeperStateMachine(void) {
         if (actualVario < sinkThreshold)
             beepControlState = BEEP_SINKING;
 
-        if(BEEP_DISABLED != beepControlState)
+        if((BEEP_DISABLED != beepControlState) && (TIMER_STOPPED == timerState))
             startBeep();
 
         break;
@@ -333,7 +341,8 @@ static void updateBeepFrequency(void) {
 static void handleStepVolumeEvent(void)
 {
     chSysLock();
-    gptStopTimerI(BEEP_TIMER);
+    if (TIMER_RUNNING == timerState)
+        gptStopTimerI(BEEP_TIMER);
     disableBeepI();
     beepControlState = BEEP_DISABLED;
     chSysUnlock();
@@ -344,7 +353,8 @@ static void handleStepVolumeEvent(void)
 static void handleSystemShutdownEvent(void)
 {
     chSysLock();
-    gptStopTimerI(BEEP_TIMER);
+    if (TIMER_RUNNING == timerState)
+        gptStopTimerI(BEEP_TIMER);
     disableBeepI();
     beepControlState = BEEP_DISABLED;
     chSysUnlock();
