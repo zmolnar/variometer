@@ -17,6 +17,7 @@
 /*******************************************************************************/
 #define BEEP_TIMER                                                         &GPTD3
 #define BEEP_PWM                                                           &PWMD4
+
 /*******************************************************************************/
 /* MACRO DEFINITIONS                                                           */
 /*******************************************************************************/
@@ -82,8 +83,8 @@ static GPTConfig beepTimerConfig =
 
 EVENTSOURCE_DECL(beeperEvent);
 
-static float liftThreshold = 0.6;
-static float liftOffThreshold = 0.2;
+static float liftThreshold = 0.4;
+static float liftOffThreshold = 0;
 static float sinkThreshold = -1.2;
 static float sinkOffThreshold = -1;
 
@@ -248,9 +249,8 @@ static void timerCallback(GPTDriver *gptp) {
 static void updateBeeperStateMachine(void) {
     switch(beepControlState) {
     case BEEP_LIFTING:
-        if (actualVario < liftOffThreshold) {
+        if (actualVario < liftOffThreshold)
             beepControlState = BEEP_DISABLED;
-        }
         break;
     case BEEP_SINKING:
         if (sinkOffThreshold < actualVario)
