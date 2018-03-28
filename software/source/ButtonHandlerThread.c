@@ -30,6 +30,7 @@
 /* DEFINITION OF GLOBAL CONSTANTS AND VARIABLES                                */
 /*******************************************************************************/
 static SEMAPHORE_DECL(buttonSemaphore, 0);
+SEMAPHORE_DECL(shutdownBeepFinishedSemaphore, 0);
 static virtual_timer_t vt;
 static systime_t start, end;
 
@@ -37,10 +38,11 @@ static void shutdownTimeoutCallback(void *arg)
 {
     (void)arg;
 
+    end = chVTGetSystemTimeX();
     chSysLockFromISR();
     extChannelDisableI(&EXTD1, 8);
-    chEvtBroadcastFlagsI(&beeperEvent, SYSTEM_SHUTDOWN);
     chSysUnlockFromISR();
+    chSemSignal(&buttonSemaphore);
 }
 
 static void buttonInterruptCallback(EXTDriver *extp, expchannel_t channel)
@@ -94,9 +96,8 @@ THD_FUNCTION(ButtonHandlerThread, arg)
 {
     (void)arg;
 
-    chThdSleepMilliseconds(2000);
-
     chSemObjectInit(&buttonSemaphore, 0);
+    chSemObjectInit(&shutdownBeepFinishedSemaphore, 0);
     extStart(&EXTD1, &extcfg);
     extChannelEnable(&EXTD1, 8);
 
@@ -108,9 +109,12 @@ THD_FUNCTION(ButtonHandlerThread, arg)
 
         uint32_t pressDuration = ST2MS(dt);
 
-        if ((STEP_VOLUME_MIN <= pressDuration) &&
-                (pressDuration < STEP_VOLUME_MAX)) {
+        if ((STEP_VOLUME_MIN <= pressDuration) && (pressDuration < STEP_VOLUME_MAX)) {
             chEvtBroadcastFlags(&beeperEvent, STEP_VOLUME);
+        } else if (SHUTDOWN_TIMEOUT <= pressDuration) {
+                chEvtBroadcastFlags(&beeperEvent, SYSTEM_SHUTDOWN);
+                chSemWait(&shutdownBeepFinishedSemaphore);
+                palClearPad(GPIOA, GPIOA_SHUTDOWN);
         }
     }
 }

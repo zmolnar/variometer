@@ -8,6 +8,7 @@
 /* INCLUDES                                                                    */
 /*******************************************************************************/
 #include "BeepControlThread.h"
+#include "ButtonHandlerThread.h"
 #include "SignalProcessorThread.h"
 #include "ch.h"
 #include "hal.h"
@@ -294,14 +295,15 @@ static void stepVolume(void) {
 static void playStartupSignal(void) {
     chThdSleepMilliseconds(50);
 
-    size_t i;
-    for (i = 0; i < 2; i++) {
-        setPwmFreqAndDutyCycle(2000, VOLUME_HIGH);
-        chThdSleepMilliseconds(50);
+    setPwmFreqAndDutyCycle(1000, VOLUME_HIGH);
+    chThdSleepMilliseconds(100);
 
-        setPwmFreqAndDutyCycle(0, VOLUME_ZERO);
-        chThdSleepMilliseconds(50);
-    }
+    setPwmFreqAndDutyCycle(1500, VOLUME_HIGH);
+    chThdSleepMilliseconds(100);
+
+    setPwmFreqAndDutyCycle(2000, VOLUME_HIGH);
+    chThdSleepMilliseconds(100);
+    setPwmFreqAndDutyCycle(0, VOLUME_ZERO);
 
     chThdSleepMilliseconds(100);
 }
@@ -309,14 +311,15 @@ static void playStartupSignal(void) {
 static void playShutdownSignal(void) {
     chThdSleepMicroseconds(500);
 
-    size_t i;
-    for (i = 0; i < 5; i++) {
-        setPwmFreqAndDutyCycle(2000, VOLUME_HIGH);
-        chThdSleepMilliseconds(50);
+    setPwmFreqAndDutyCycle(2000, VOLUME_HIGH);
+    chThdSleepMilliseconds(100);
 
-        setPwmFreqAndDutyCycle(0, VOLUME_ZERO);
-        chThdSleepMilliseconds(50);
-    }
+    setPwmFreqAndDutyCycle(1500, VOLUME_HIGH);
+    chThdSleepMilliseconds(100);
+
+    setPwmFreqAndDutyCycle(1000, VOLUME_HIGH);
+    chThdSleepMilliseconds(100);
+    setPwmFreqAndDutyCycle(0, VOLUME_ZERO);
 }
 
 static void playVolumeSetSignal(void) {
@@ -359,7 +362,7 @@ static void handleSystemShutdownEvent(void)
     beepControlState = BEEP_DISABLED;
     chSysUnlock();
     playShutdownSignal();
-    palClearPad(GPIOA, GPIOA_SHUTDOWN);
+    chSemSignal(&shutdownBeepFinishedSemaphore);
 }
 
 static void handleSignalProcessorEvent(void)
