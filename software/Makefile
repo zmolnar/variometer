@@ -30,7 +30,7 @@ endif
 
 # Enable this if you want link time optimizations (LTO)
 ifeq ($(USE_LTO),)
-  USE_LTO = yes
+  USE_LTO = no
 endif
 
 # If enabled, this option allows to compile the application in THUMB mode.
@@ -215,6 +215,10 @@ ULIBS =
 #
 # End of user defines
 ##############################################################################
+
+tags:
+	@etags $(CSRC) $(TAGFILE) $(shell find $(INCDIR) -type f -iname "*.h")
+	@echo TAGS generated succesfully.
 
 RULESPATH = $(CHIBIOS)/os/common/ports/ARMCMx/compilers/GCC
 include $(RULESPATH)/rules.mk
